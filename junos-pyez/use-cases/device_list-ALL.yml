@@ -1,0 +1,6 @@
+---
+# Add devices here in form Hostname: 'ip address'
+
+  MX480#1: 'xxx.xxx.xxx.xxx'
+  MX480#2: 'xxx.xxx.xxx.xxx'
+  MX480#3: 'xxx.xxx.xxx.xxx'  
