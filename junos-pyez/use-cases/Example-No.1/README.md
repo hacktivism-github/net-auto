@@ -11,3 +11,7 @@ This python script was built by putting together small portions of code availabl
 * A get_config() Remote Procedure Call (RPC) is executed to request the complete configuration.
 * On receiving the data it opens/creates a file to place the data and names it the with same name as the node and makes it a .txt. 
 * Upon completion (gathering config data) the script runs git add --all to  add them all to the repo, then commit and push.
+
+Happy Labbing!
+
+/me
