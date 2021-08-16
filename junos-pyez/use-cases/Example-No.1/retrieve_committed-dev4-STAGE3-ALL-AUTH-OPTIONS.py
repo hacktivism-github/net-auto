@@ -11,16 +11,16 @@ import yaml
 
 input_file = 'device_list-ALL.yml'
 
-user = input("Junos OS username: ")
-passwd = getpass.getpass("Junos OS password: ")
+#user = input("Junos OS username: ")
+#passwd = getpass.getpass("Junos OS password: ")
 
 for key, value in yaml.safe_load(open(input_file)).items():
 
 #	with Device(host=value, user='<username>', passwd='<password>', port='22') as dev: 	# Option 1::Creds in clear text
 
-	with Device(host=value, user=user, passwd=passwd, port='22') as dev: 			# Option 2::Prompts for User/Passwd
+#	with Device(host=value, user=user, passwd=passwd, port='22') as dev: 			# Option 2::Prompts for User/Passwd
 	
-#	with Device(host=value, ssh_priv_key_file='~/.ssh/gitlab_ed25519') as dev: 		# Option 3::Using SSH Keys
+	with Device(host=value, ssh_priv_key_file='~/.ssh/gitlab_ed25519') as dev: 		# Option 3::Using SSH Keys
 
 		try:
 			dev.open()
@@ -39,7 +39,7 @@ for key, value in yaml.safe_load(open(input_file)).items():
 
 dev.close()
 
-cmds = ['cd /Users/me/git/gitlab/dev/', 'cp *.txt /Users/me/git/gitlab/network-configs/','cd /Users/me/git/gitlab/network-configs/', 'git add --all','git commit -m "Updated config files"', 'git push']
+cmds = ['mv *.txt /Users/me/git/gitlab/network-configs/','cd /Users/me/git/gitlab/network-configs/', 'git add --all','git commit -m "updating config files"', 'git push']
 encoding = 'unicode'
 p = Popen('/bin/bash', stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
