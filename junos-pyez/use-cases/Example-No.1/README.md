@@ -7,10 +7,10 @@ This python script was built by putting together small portions of code availabl
 
 ### Workflow
 * The script is set to run from a cron job call on a specific frequency.
-* A NETCONF session over SSH is established to all nodes in the .yml file sequentially.
-* A get_config() Remote Procedure Call (RPC) is executed to request the complete configuration.
-* On receiving the config it opens/creates a file (for each node) to write the data into, and name it after the entry on the .yml file for which it's performing the RPC to, and makes it a .txt on closing the file. 
-* Upon completion the script runs <span style="font-family: Courier New;">git add --all</span> to  add them all to the repo, then commit and push.
+* A NETCONF session over SSH is established to all nodes in the `.yml` file sequentially.
+* A [`get_config()`](https://www.juniper.net/documentation/us/en/software/junos/netconf/topics/ref/tag/netconf-get-config.html) Remote Procedure Call (RPC) is executed to request the complete configuration.
+* On receiving the config it opens/creates a file (for each node) to write the data into, and name it after the entry on the `.yml` file for which it's performing the RPC to, and makes it a `.txt` on closing the file. 
+* Upon completion the script runs [`git add --all`](http://git-scm.com/docs/git-add) to add them all to the repo, then [`git commit`](http://git-scm.com/docs/git-commit) and [`git push`](http://git-scm.com/docs/git-push).
 
 Happy Labbing!
 
