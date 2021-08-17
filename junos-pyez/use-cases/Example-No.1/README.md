@@ -10,7 +10,7 @@ This python script was built by putting together small portions of code availabl
 * A NETCONF session over SSH is established to all nodes in the .yml file sequentially.
 * A get_config() Remote Procedure Call (RPC) is executed to request the complete configuration.
 * On receiving the config it opens/creates a file (for each node) to write the data into, and name it after the entry on the .yml file for which it's performing the RPC to, and makes it a .txt on closing the file. 
-* Upon completion (gathering config data) the script runs <span style="font-family:Courier-new;">git add --all</span> to  add them all to the repo, then commit and push.
+* Upon completion the script runs <span style="font-family: Courier New;">git add --all</span> to  add them all to the repo, then commit and push.
 
 Happy Labbing!
 
