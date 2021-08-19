@@ -1,7 +1,7 @@
 # Use Case No. 1
 
 ### Overview
-This python script was built by putting together small portions of code available at the "[Junos PyEZ Developer Guide](https://www.juniper.net/documentation/en_US/junos-pyez/information-products/pathway-pages/junos-pyez-developer-guide.html)" aiming to automaticatically feed a Git repository with Network configuration data (may the Network Engineers fail/forget to do so), keeping the teams distributed across different timezones informed and making it  easy to co-relate events and/or incidents to changes (to begin with), thus making troubleshooting smoother.
+This python script was built by putting together small portions of code available at the "[Junos PyEZ Developer Guide](https://www.juniper.net/documentation/en_US/junos-pyez/information-products/pathway-pages/junos-pyez-developer-guide.html)" aiming to automatically feed a Git repository with Network configuration data (may the Network Engineers fail/forget to do so), keeping the teams distributed across different timezones informed and making it  easy to co-relate events and/or incidents to changes (to begin with), thus making troubleshooting smoother.
 
 ![Example No.1 Diagram](/images/ex-no1.png)
 
