@@ -67,13 +67,13 @@ Devices tested include:
 
 Install dependencies:
 
-```bash
+```
 pip install playwright
 playwright install
+```
 
----
 
 ## License
 
 This project is licensed under the **MIT License**.  
-See [`LICENSE.md`](LICENSE.md) for details.
+See [`LICENSE.md`](https://github.com/hacktivism-github/netauto/blob/development/LICENSE) for details.
