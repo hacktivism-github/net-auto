@@ -76,4 +76,4 @@ playwright install
 ## License
 
 This project is licensed under the **MIT License**.  
-See [`LICENSE.md`](https://github.com/hacktivism-github/netauto/blob/development/LICENSE) for details.
+See [`LICENSE`](https://github.com/hacktivism-github/netauto/blob/development/LICENSE) for details.
