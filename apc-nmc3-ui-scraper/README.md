@@ -15,9 +15,9 @@ This tool automates end-to-end browser interaction with APC Network Management C
 
 Developed for large-scale UPS deployments where vendors/suppliers often leave insecure defaults across multiple branch sites.
 
-'''
+´´´
 python apc_headful_audit.py --hosts ups_hosts.txt --headful --https --timeout 30
-'''
+´´´
 
 ---
 
