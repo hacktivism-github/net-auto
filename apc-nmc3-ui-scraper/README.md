@@ -1,6 +1,6 @@
 # APC UPS Security Auditor 
 
-Automated default-credential detection and password hardening for Schneider Electric APC UPS devices (NMC3) using Playwright.
+Automated default-credential detection and password hardening for Schneider Electric APC UPS devices (NMC3) using [Playwright](https://playwright.dev/python/).
 
 This tool automates end-to-end browser interaction with APC Network Management Card (NMC3) web interfaces in order to:
 
