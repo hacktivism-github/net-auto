@@ -1,7 +1,5 @@
 # APC UPS Security Auditor
 
-# APC UPS Security Auditor
-
 <p align="center">
   <a href="https://pypi.org/project/apc-ups-security-auditor/">
     <img src="https://img.shields.io/pypi/v/apc-ups-security-auditor.svg" alt="PyPI Version">
