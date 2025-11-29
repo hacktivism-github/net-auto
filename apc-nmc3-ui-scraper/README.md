@@ -23,21 +23,25 @@ python apc_headful_audit.py --hosts ups_hosts.txt --headful --https --timeout 30
 
 ## Features
 
-- ✔ Headful Playwright browser automation (you can visually watch every step)
-- ✔ Securely logs in using default credentials
-- ✔ Detects whether defaults are still accepted
-- ✔ Prompts per-device for password hardening
-- ✔ Fully automates:
-  - Setting English language
-  - Logging in
-  - Clicking through menus (no hovers)
-  - Navigating to User Management → apc
-  - Filling Current/New/Confirm password
-  - Clicking "Next" and the final "Apply"
-- ✔ Supports `http` or `https`
-- ✔ Per-device summary at the end
-- ✔ Timeout control for slow devices
-- ✔ Ignores expired/invalid SSL certificates
+- ✔ Headful Playwright browser automation (podes ver cada passo no browser)
+- ✔ Login automático com credenciais por defeito (`apc/apc`)
+- ✔ Deteção de dispositivos que ainda usam credenciais por defeito
+- ✔ Modo interativo (pergunta por host se deve mudar a password)
+- ✔ **Modo no-prompt (`--auto-change`)** para hardening em massa sem interações
+- ✔ Fluxo completo de mudança de password:
+  - Selecção de idioma (English)
+  - Logon com `apc/apc`
+  - `Configuration → Security → Local Users → Management → apc`
+  - Preenchimento de Current / New / Confirm Password
+  - Clique em `Next` e `Apply` na página de confirmação
+- ✔ Suporte para HTTP e HTTPS (ignora certificados inválidos)
+- ✔ **Relatórios em CSV e JSON** (`--report-csv`, `--report-json`) com:
+  - host
+  - timestamp
+  - se usava credenciais por defeito
+  - se a password foi alterada
+  - estado (ok/timeout/error)
+  - mensagem de erro (quando aplicável)
 
 ---
 
@@ -72,6 +76,115 @@ pip install playwright
 playwright install
 ```
 
+---
+
+## Hosts File Format
+
+```
+10.111.9.219
+10.111.9.220
+192.168.100.15
+```
+You may include comments:
+```
+# Benguela Branch UPS
+10.111.9.219
+```
+
+---
+
+## Usage
+
+# 1. Interactive mode (ideal for watching the process)
+
+```
+python apc_headful_audit.py --hosts ups_hosts.txt --headful --https --timeout 30
+```
+Flow:
+
+1. Script asks for a new password (this will replace apc).
+2. For each UPS:
+    . Opens browser
+    . Selects English language
+    . Logs in with apc/apc
+    . If defaults still work, asks:
+   ```
+   -> Attempt password change via web UI now? [y/N]:
+    ```
+
+# 2. Automatic mode (no prompts)
+
+To harden all UPS devices without asking anything, use:
+```
+python apc_headful_audit.py \
+  --hosts ups_hosts.txt \
+  --https \
+  --auto-change \
+  --timeout 30
+```
+If the login using ```apc/apc``` succeeds:
+
+    . The tool __does not ask__
+    . It __immediately__ runs the full UI-driven password change
+    . Moves to the next UPS automatically
+
+Combine auto-change with headful mode if you want to visually monitor:
+
+```
+python apc_headful_audit.py \
+  --hosts ups_hosts.txt \
+  --https \
+  --headful \
+  --auto-change \
+  --timeout 30
+```
+
+# 3. Generate CSV/JSON Reports
+
+```
+python apc_headful_audit.py \
+  --hosts ups_hosts.txt \
+  --https \
+  --auto-change \
+  --report-csv ups_report.csv \
+  --report-json ups_report.json
+```
+
+The report includes:
+
+```
+| Field                 | Meaning                                |
+| --------------------- | -------------------------------------- |
+| `host`                | UPS IP/hostname                        |
+| `timestamp`           | UTC timestamp                          |
+| `default_credentials` | `True` = still using `apc/apc`         |
+| `password_changed`    | `True` = password successfully updated |
+| `status`              | ok / timeout / error / unknown         |
+| `error`               | error message if applicable            |
+```
+
+__Example CSV line:__
+```
+10.111.9.219,2025-11-27T10:15:00Z,True,True,ok,
+```
+
+# 4. All available arguments
+
+```
+| Parameter        | Description                                   |
+|------------------|-----------------------------------------------|
+| `--hosts`        | Path to file with UPS list                    |
+| `--https`        | Use HTTPS                                     |
+| `--headful`      | Show the browser window                       |
+| `--timeout`      | Timeout (seconds) for page loads              |
+| `--username`     | Username (default: `apc`)                     |
+| `--default-pass` | Default password (default: `apc`)             |
+| `--new-pass`     | New password (if omitted, asks interactively) |
+| `--auto-change`  | Do not prompt; automatically harden devices   |
+| `--report-csv`   | Write CSV report                              |
+| `--report-json`  | Write JSON report                             |
+
+```
 
 ## License
 
