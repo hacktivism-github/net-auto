@@ -1,4 +1,17 @@
-# APC UPS Security Auditor 
+# APC UPS Security Auditor
+
+<p align="center">
+  <a href="https://pypi.org/project/apc-ups-security-auditor/">
+    <img src="https://img.shields.io/pypi/v/apc-ups-security-auditor.svg" alt="PyPI Version">
+  </a>
+  <a href="https://pypi.org/project/apc-ups-security-auditor/">
+    <img src="https://img.shields.io/pypi/pyversions/apc-ups-security-auditor.svg" alt="Python Versions">
+  </a>
+  <a href="https://github.com/hacktivism-github/netauto/blob/development/LICENSE">
+    <img src="https://img.shields.io/github/license/hacktivism-github/netauto/apc-ups-security-auditor.svg" alt="MIT License">
+  </a>
+</p>
+
 
 Automated default-credential detection and password hardening for Schneider Electric APC UPS devices (NMC3) using [Playwright](https://playwright.dev/python/).
 
@@ -15,7 +28,29 @@ This tool automates end-to-end browser interaction with APC Network Management C
 
 Developed for large-scale UPS deployments where vendors/suppliers often leave insecure defaults across multiple branch sites.
 
+Published on PyPI for easy installation.
+
 ---
+
+## Installation
+
+### Install from PyPI (recommended)
+
+```
+pip install apc-ups-security-auditor
+```
+Then install Playwright browsers:
+```
+playwright install
+```
+### Install from source
+
+```
+git clone https://github.com/hacktivism-github/apc-ups-security-auditor.git
+cd apc-ups-security-auditor
+pip install -e .
+playwright install
+```
 
 ## Features
 
@@ -96,6 +131,10 @@ You may include comments:
 ```
 python apc_headful_audit.py --hosts ups_hosts.txt --headful --https --timeout 30
 ```
+```
+apc-ups-audit --hosts ups_hosts.txt --headful --https --timeout 30
+```
+
 Flow:
 
 1. Script asks for a new password (this will replace apc).
@@ -107,6 +146,7 @@ Flow:
    ```
    -> Attempt password change via web UI now? [y/N]:
     ```
+3. If you type ```y```, it performs the full password-hardening workflow.
 
 ### 2. Automatic mode (no prompts)
 
@@ -119,6 +159,12 @@ python apc_headful_audit.py \
   --timeout 30
 ```
 
+```
+apc-ups-audit \
+  --hosts ups_hosts.txt \
+  --https \
+  --auto-change
+```
 
 If the login using ```apc/apc``` succeeds:
    - The tool __does not ask__
@@ -134,6 +180,14 @@ python apc_headful_audit.py \
   --headful \
   --auto-change \
   --timeout 30
+```
+
+```
+apc-ups-audit \
+  --hosts ups_hosts.txt \
+  --https \
+  --headful \
+  --auto-change
 ```
 
 ### 3. Generate CSV/JSON Reports
