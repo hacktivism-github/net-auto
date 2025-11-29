@@ -185,6 +185,30 @@ __Example CSV line:__
 
 ---
 
+## Password Hardening Workflow
+
+When a device still accepts ```apc/apc```, the tool:
+
+1. Logs in
+
+2. Navigates using clicks, not hovers
+
+3. Opens the apc Super User config
+
+4. Fills:
+
+   - Current Password
+   - New Password
+   - Confirm Password
+5. Clicks Next
+6. Clicks Apply on confirmation page
+7. Confirms success
+8. Moves to next host
+
+The entire process is visible in headful mode.
+
+---
+
 ## Disclaimer
 
 This tool modifies administrator credentials on APC UPS devices.
