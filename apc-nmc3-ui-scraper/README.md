@@ -77,14 +77,14 @@ playwright install
 ## Hosts File Format
 
 ```
-10.111.9.219
-10.111.9.220
-192.168.100.15
+10.x.x.x
+172.16.x.x
+192.168.x.x
 ```
 You may include comments:
 ```
 # Benguela Branch UPS
-10.111.9.219
+10.x.x.x
 ```
 
 ---
