@@ -121,9 +121,9 @@ python apc_headful_audit.py \
 
 If the login using ```apc/apc``` succeeds:
 
-    . The tool __does not ask__
-    . It __immediately__ runs the full UI-driven password change
-    . Moves to the next UPS automatically
+    - The tool __does not ask__
+    - It __immediately__ runs the full UI-driven password change
+    - Moves to the next UPS automatically
 
 Combine auto-change with headful mode if you want to visually monitor:
 
