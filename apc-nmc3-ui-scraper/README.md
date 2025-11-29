@@ -1,18 +1,5 @@
 # APC UPS Security Auditor
 
-<p align="center">
-  <a href="https://pypi.org/project/apc-ups-security-auditor/">
-    <img src="https://img.shields.io/pypi/v/apc-ups-security-auditor.svg" alt="PyPI Version">
-  </a>
-  <a href="https://pypi.org/project/apc-ups-security-auditor/">
-    <img src="https://img.shields.io/pypi/pyversions/apc-ups-security-auditor.svg" alt="Python Versions">
-  </a>
-  <a href="https://github.com/hacktivism-github/netauto/blob/development/LICENSE">
-    <img src="https://img.shields.io/github/license/hacktivism-github/netauto/apc-ups-security-auditor.svg" alt="MIT License">
-  </a>
-</p>
-
-
 Automated default-credential detection and password hardening for Schneider Electric APC UPS devices (NMC3) using [Playwright](https://playwright.dev/python/).
 
 This tool automates end-to-end browser interaction with APC Network Management Card (NMC3) web interfaces in order to:
