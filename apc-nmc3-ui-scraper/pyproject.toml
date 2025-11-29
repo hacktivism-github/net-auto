@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "apc-ups-security-auditor"
+version = "0.1.2"
+description = "Automated default-credential detection and password hardening for APC UPS NMC3 using Playwright."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Bruno Teixeira" }]
+requires-python = ">=3.9"
+dependencies = [
+  "playwright>=1.47.0",
+]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/hacktivism-github/netauto/tree/development/apc-nmc3-ui-scraper"
+Repository = "https://github.com/hacktivism-github/netauto"
+
+[project.scripts]
+apc-ups-audit = "apc_ups_security_auditor.cli:main"
+
+[tool.setuptools]
+packages = ["apc_ups_security_auditor"]
+license-files = ["LICENSE", "LICENSE.txt"]
