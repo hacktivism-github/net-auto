@@ -78,25 +78,6 @@ apc-ups-audit --help
 playwright install
 ```
 
-```
-Downloading Chromium 141.0.7390.37 (playwright build v1194) from https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1194/chromium-mac.zip
-136.3 MiB [====================] 100% 0.0s
-Chromium 141.0.7390.37 (playwright build v1194) downloaded to /Users/me/Library/Caches/ms-playwright/chromium-1194
-Downloading Chromium Headless Shell 141.0.7390.37 (playwright build v1194) from https://cdn.playwright.dev/dbazure/download/playwright/builds/chromium/1194/chromium-headless-shell-mac.zip
-85.1 MiB [====================] 100% 0.0s
-Chromium Headless Shell 141.0.7390.37 (playwright build v1194) downloaded to /Users/me/Library/Caches/ms-playwright/chromium_headless_shell-1194
-Downloading Firefox 142.0.1 (playwright build v1495) from https://cdn.playwright.dev/dbazure/download/playwright/builds/firefox/1495/firefox-mac.zip
-96.9 MiB [====================] 100% 0.0s
-Firefox 142.0.1 (playwright build v1495) downloaded to /Users/me/Library/Caches/ms-playwright/firefox-1495
-You are using a frozen webkit browser which does not receive updates anymore on mac13. Please update to the latest version of your operating system to test up-to-date browsers.
-Downloading Webkit playwright build v2140 from https://cdn.playwright.dev/dbazure/download/playwright/builds/webkit/2140/webkit-mac-13.zip
-77 MiB [====================] 100% 0.0s
-Webkit playwright build v2140 downloaded to /Users/me/Library/Caches/ms-playwright/webkit_mac13_special-2140
-Downloading FFMPEG playwright build v1011 from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1011/ffmpeg-mac.zip
-1.3 MiB [====================] 100% 0.0s
-FFMPEG playwright build v1011 downloaded to /Users/me/Library/Caches/ms-playwright/ffmpeg-1011
-```
-
 #### 4. Run the tool
 See Usage below
 
