@@ -61,7 +61,7 @@ cd netauto/apc-nmc3-ui-scraper
 python3 -m venv .venv
 source .venv/bin/activate     # Linux/macOS
 ```
-# or
+#### or
 ```
 .\.venv\Scripts\activate      # Windows PowerShell
 ```
@@ -166,9 +166,6 @@ You may include comments:
 ### 1. Interactive mode (ideal for watching the process)
 
 ```
-python apc_headful_audit.py --hosts ups_hosts.txt --headful --https --timeout 30
-```
-```
 apc-ups-audit --hosts ups_hosts.txt --headful --https --timeout 30
 ```
 
@@ -188,13 +185,6 @@ Flow:
 ### 2. Automatic mode (no prompts)
 
 To harden all UPS devices without asking anything, use:
-```
-python apc_headful_audit.py \
-  --hosts ups_hosts.txt \
-  --https \
-  --auto-change \
-  --timeout 30
-```
 
 ```
 apc-ups-audit \
@@ -211,15 +201,6 @@ If the login using ```apc/apc``` succeeds:
 Combine auto-change with headful mode if you want to visually monitor:
 
 ```
-python apc_headful_audit.py \
-  --hosts ups_hosts.txt \
-  --https \
-  --headful \
-  --auto-change \
-  --timeout 30
-```
-
-```
 apc-ups-audit \
   --hosts ups_hosts.txt \
   --https \
@@ -230,7 +211,7 @@ apc-ups-audit \
 ### 3. Generate CSV/JSON Reports
 
 ```
-python apc_headful_audit.py \
+apc-ups-audit \
   --hosts ups_hosts.txt \
   --https \
   --auto-change \
@@ -325,3 +306,10 @@ The author is not responsible for misuse or misconfiguration.
 
 This project is licensed under the **MIT License**.  
 See [`LICENSE`](https://github.com/hacktivism-github/netauto/blob/development/LICENSE) for details.
+
+---
+
+## Author
+
+Bruno Teixeira
+Network & Security Automation — Angola
