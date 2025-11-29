@@ -15,10 +15,6 @@ This tool automates end-to-end browser interaction with APC Network Management C
 
 Developed for large-scale UPS deployments where vendors/suppliers often leave insecure defaults across multiple branch sites.
 
-```
-python apc_headful_audit.py --hosts ups_hosts.txt --headful --https --timeout 30
-```
-
 ---
 
 ## Features
@@ -95,7 +91,7 @@ You may include comments:
 
 ## Usage
 
-# 1. Interactive mode (ideal for watching the process)
+### 1. Interactive mode (ideal for watching the process)
 
 ```
 python apc_headful_audit.py --hosts ups_hosts.txt --headful --https --timeout 30
@@ -112,7 +108,7 @@ Flow:
    -> Attempt password change via web UI now? [y/N]:
     ```
 
-# 2. Automatic mode (no prompts)
+### 2. Automatic mode (no prompts)
 
 To harden all UPS devices without asking anything, use:
 ```
@@ -139,7 +135,7 @@ python apc_headful_audit.py \
   --timeout 30
 ```
 
-# 3. Generate CSV/JSON Reports
+### 3. Generate CSV/JSON Reports
 
 ```
 python apc_headful_audit.py \
@@ -168,7 +164,7 @@ __Example CSV line:__
 10.111.9.219,2025-11-27T10:15:00Z,True,True,ok,
 ```
 
-# 4. All available arguments
+### 4. All available arguments
 
 ```
 | Parameter        | Description                                   |
