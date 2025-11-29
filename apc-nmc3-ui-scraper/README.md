@@ -118,6 +118,7 @@ python apc_headful_audit.py \
   --auto-change \
   --timeout 30
 ```
+
 If the login using ```apc/apc``` succeeds:
 
     . The tool __does not ask__
