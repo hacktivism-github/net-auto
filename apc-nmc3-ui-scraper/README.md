@@ -43,14 +43,35 @@ Then install Playwright browsers:
 ```
 playwright install
 ```
-### Install from source
+
+## Install from Source
+
+If you want to run the latest development version directly from GitHub, you can install the package from the `apc-nmc3-ui-scraper` subdirectory of the repository.
+
+### 1. Clone the repository
 
 ```
-git clone https://github.com/hacktivism-github/apc-ups-security-auditor.git
-cd apc-ups-security-auditor
+git clone https://github.com/hacktivism-github/netauto.git
+cd netauto/apc-nmc3-ui-scraper
+```
+
+### 2. Create and activate a virtual environment (recommended)
+
+```
+python3 -m venv .venv
+source .venv/bin/activate     # Linux/macOS
+```
+# or
+```
+.\.venv\Scripts\activate      # Windows PowerShell
+```
+## 3. Install the project in editable mode
+
+```
 pip install -e .
 playwright install
 ```
+!(https://github.com/hacktivism-github/images/blob/main/Screenshot%202025-11-29%20at%2022.49.09.png)
 
 ## Features
 
