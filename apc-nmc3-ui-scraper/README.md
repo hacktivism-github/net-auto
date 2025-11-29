@@ -121,7 +121,7 @@ python apc_headful_audit.py \
 
 If the login using ```apc/apc``` succeeds:
 
-``````
+`
     - The tool __does not ask__
     - It __immediately__ runs the full UI-driven password change
     - Moves to the next UPS automatically
