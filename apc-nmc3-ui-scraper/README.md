@@ -209,6 +209,14 @@ The entire process is visible in headful mode.
 
 ---
 
+## Demo
+
+```
+I'll be adding the demo soon!
+```
+
+---
+
 ## Disclaimer
 
 This tool modifies administrator credentials on APC UPS devices.
