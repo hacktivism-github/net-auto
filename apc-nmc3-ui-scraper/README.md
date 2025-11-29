@@ -183,6 +183,21 @@ __Example CSV line:__
 
 ```
 
+---
+
+## Disclaimer
+
+This tool modifies administrator credentials on APC UPS devices.
+Use responsibly and ensure:
+   - You have explicit authorization
+   - You follow organizational security policies
+   - New passwords are stored securely
+   - Changes are properly documented
+
+The author is not responsible for misuse or misconfiguration.
+
+---
+
 ## License
 
 This project is licensed under the **MIT License**.  
