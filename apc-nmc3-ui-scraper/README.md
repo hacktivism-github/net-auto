@@ -71,7 +71,7 @@ source .venv/bin/activate     # Linux/macOS
 pip install -e .
 playwright install
 ```
-!(https://github.com/hacktivism-github/images/blob/main/Screenshot%202025-11-29%20at%2022.49.09.png)
+![Alt text](https://github.com/hacktivism-github/images/blob/main/Screenshot%202025-11-29%20at%2022.49.09.png)
 
 ## Features
 
