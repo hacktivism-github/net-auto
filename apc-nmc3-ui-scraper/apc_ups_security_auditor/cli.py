@@ -237,25 +237,35 @@ def create_admin_user_via_ui(
         page.wait_for_load_state("domcontentloaded")
         time.sleep(0.3)
 
-        # 4) Management (user list) - you already used userman.htm before
+        # 4) Management (user list)
         print("      -> Opening 'Management' (user list)")
         page.locator("a[href*='userman.htm']").first.click(timeout=10000)
         page.wait_for_load_state("domcontentloaded")
         time.sleep(0.5)
 
-        # 5) Click "Add User" or equivalent
-        print("      -> Clicking 'Add User'...")
+        # 5) Click "Add User"
+        print("      -> Clicking 'Add User'…")
         added = False
+
+        # Try button
         try:
             page.get_by_role("button", name="Add User").click(timeout=5000)
             added = True
         except Exception:
             pass
 
+        # Try input[value='Add User']
         if not added:
-            # Older firmwares may use an <input> or link instead of a button
             try:
                 page.locator("input[value='Add User']").first.click(timeout=5000)
+                added = True
+            except Exception:
+                pass
+
+        # Try explicit link to useradd.htm
+        if not added:
+            try:
+                page.locator("a[href*='useradd']").first.click(timeout=5000)
                 added = True
             except Exception:
                 pass
@@ -264,41 +274,105 @@ def create_admin_user_via_ui(
             print("      [!] Could not find an 'Add User' control.")
             return False
 
-        page.wait_for_load_state("domcontentloaded")
+        page.wait_for_load_state("domcontentloaded", timeout=10000)
         time.sleep(0.5)
 
-        # 6) Fill username and password fields
+        # Some firmwares incorrectly land on usercfg.htm?user=
+        current_url = page.url.lower()
+        if "usercfg.htm" in current_url and "user=" in current_url and current_url.endswith("user="):
+            print("      [!] Landed on usercfg.htm?user= (empty). Trying fallback to useradd.htm …")
+            try:
+                # Simple fallback: swap to useradd.htm
+                fallback_url = current_url.replace("usercfg.htm?user=", "useradd.htm")
+                page.goto(fallback_url, timeout=8000)
+                page.wait_for_load_state("domcontentloaded")
+                time.sleep(0.5)
+                current_url = page.url.lower()
+            except Exception as e:
+                print(f"      [!] Fallback to useradd.htm failed: {e}")
+                return False
+
+        print(f"      -> Now on page: {current_url}")
+
+        # 6) Ensure access is enabled if such checkbox exists
+        try:
+            enable_chk = page.get_by_label("Enable")
+            if enable_chk.is_visible():
+                enable_chk.check()
+                print("      -> Enabled access for new user.")
+        except Exception:
+            # Not all firmwares need this or map the label the same way
+            pass
+
+        # 7) Fill username
         print(f"      -> Filling new admin user: {new_username}")
+        filled_username = False
 
-        # These selectors may need adjustment based on actual HTML;
-        # start with simple name-based or label-based selectors.
-        page.fill("input[name='username']", new_username)
+        # Try a named username input first
+        try:
+            page.fill("input[name='username']", new_username)
+            filled_username = True
+        except Exception:
+            pass
 
-        # Assume password fields are type='password' and there are at least two:
+        # Try label-based selector
+        if not filled_username:
+            try:
+                page.get_by_label("User Name").fill(new_username)
+                filled_username = True
+            except Exception:
+                pass
+
+        # Fallback: first empty text input
+        if not filled_username:
+            try:
+                txt = page.locator("input[type='text']").first
+                txt.fill(new_username)
+                filled_username = True
+            except Exception:
+                pass
+
+        if not filled_username:
+            print("      [!] Could not locate username field.")
+            return False
+
+        # 8) Fill password & confirm password
+        print("      -> Filling password fields…")
         pwd_inputs = page.locator("input[type='password']")
-        if pwd_inputs.count() < 2:
-            print("      [!] Could not find both password fields.")
+        count = pwd_inputs.count()
+        if count < 2:
+            print(f"      [!] Could not find two password fields (found {count}).")
             return False
 
         pwd_inputs.nth(0).fill(new_password)
         pwd_inputs.nth(1).fill(new_password)
 
-        # 7) Select Super User role if necessary (depends on UI)
-        # Example: dropdown or radio button:
+        # 9) Select Super User / Administrator role
+        print("      -> Setting user role to Super User (if possible)…")
         try:
-            # Example: a select with name 'user_role' or similar
-            role_select = page.locator("select[name='user_role']")
+            # Try a role dropdown with a reasonable name
+            role_select = page.locator("select[name='user_role'], select[name='usertype'], select[name*='Type']")
             if role_select.count() > 0:
-                role_select.select_option("Super User")
+                try:
+                    role_select.first.select_option(label="Super User")
+                except Exception:
+                    # Fallback to Administrator if Super User is not present
+                    try:
+                        role_select.first.select_option(label="Administrator")
+                    except Exception:
+                        pass
             else:
-                # Fallback for radio/checkbox labelled "Super User"
-                page.get_by_label("Super User").check()
+                # Maybe it's a radio/checkbox
+                try:
+                    page.get_by_label("Super User").check()
+                except Exception:
+                    pass
         except Exception:
-            # if role defaults to Super User on this page, it's ok
+            # If nothing works, we just keep the default role.
             pass
 
-        # 8) Click Apply / OK
-        print("      -> Clicking 'Apply' to create new admin user...")
+        # 10) Click Apply / OK
+        print("      -> Clicking 'Apply' to create new admin user…")
         submitted = False
         try:
             page.get_by_role("button", name="Apply").click(timeout=5000)
@@ -317,10 +391,15 @@ def create_admin_user_via_ui(
             print("      [!] Could not click Apply to create user.")
             return False
 
-        page.wait_for_load_state("networkidle", timeout=10000)
+        # 11) Wait for completion
+        try:
+            page.wait_for_load_state("networkidle", timeout=10000)
+        except Exception:
+            # not fatal; some firmwares don't reach networkidle cleanly
+            pass
+
         time.sleep(0.5)
         print("    [✓] New admin user creation flow completed (UI).")
-
         return True
 
     except PlaywrightTimeoutError:
@@ -329,6 +408,7 @@ def create_admin_user_via_ui(
     except Exception as e:
         print(f"    [!] Exception while creating admin user: {e}")
         return False
+
 
         
 def main():
