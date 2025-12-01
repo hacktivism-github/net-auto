@@ -148,54 +148,6 @@ Each row includes:
 
 ---
 
-## Install from Source
-
-### 1. Clone the repository
-
-```
-git clone https://github.com/hacktivism-github/netauto.git
-cd netauto/apc-nmc3-ui-scraper
-```
-
-### 2. Create a Python virtual environment
-
-```
-python3 -m venv .venv
-source .venv/bin/activate    # Mac/Linux
-```
-# or:
-```
-.venv\Scripts\activate     # Windows PowerShell
-```
-
-### 3. Install dependencies
-
-```
-pip install -r requirements.txt
-pip install playwright
-playwright install chromium
-```
-
-### 4. Run the tool
-
-Example: Create new admin user on all hosts
-
-```
-apc-ups-audit \
-  --hosts ups_hosts.txt \
-  --https \
-  --headful \
-  --current-user apc \
-  --current-pass "<hardened_apc_password>" \
-  --create-admin \
-  --new-admin-user bai-admin \
-  --new-admin-pass "<StrongPasswordHere>" \
-  --auto \
-  --report-csv phase1_create_admin.csv
-```
-
----
-
 ## CLI Usage
 
 ```
@@ -224,6 +176,38 @@ Full help:
 
 ```
 apc-ups-audit --help
+```
+
+Example: Create new admin user on all hosts
+
+macOS, Linux:
+```
+apc-ups-audit \
+  --hosts ups_hosts.txt \
+  --https \
+  --headful \
+  --current-user apc \
+  --current-pass "<hardened_apc_password>" \
+  --create-admin \
+  --new-admin-user bai-admin \
+  --new-admin-pass "<StrongPasswordHere>" \
+  --auto \
+  --report-csv phase1_create_admin.csv
+```
+
+Powershell:
+```
+(.venv) PS> apc-ups-audit `
+  --hosts ups_hosts.txt `
+  --https `
+  --headful `
+  --current-user apc `
+  --current-pass "<hardened_apc_password>" `
+  --create-admin `
+  --new-admin-user "bai-admin" `
+  --new-admin-pass "<StrongPass>" `
+  --auto `
+  --report-csv phase1_create_admin.csv
 ```
 
 ---
