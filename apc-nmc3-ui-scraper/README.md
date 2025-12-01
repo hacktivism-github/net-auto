@@ -13,18 +13,15 @@
 </p>
 
 
-Automated default-credential detection and password hardening for Schneider Electric APC UPS devices (NMC3) using [Playwright](https://playwright.dev/python/).
+Automated security auditing and UI-driven hardening for Schneider Electric APC UPS devices (NMC3) using [Playwright](https://playwright.dev/python/).
 
-This tool automates end-to-end browser interaction with APC Network Management Card (NMC3) web interfaces in order to:
+This tool automates browser interaction with the APC Network Management Card web interface to:
 
 - Detect UPS devices still using **default credentials** (`apc/apc`)
-- Prompt the operator to harden security by changing the password
-- Perform a **full UI-driven password update**, including:
-  - Login
-  - Menu navigation
-  - Editing the `apc` Super User password
-  - Applying confirmation screens
-- Provide clear reporting per device (valid, invalid, unknown)
+- Change the Super User default password through the UI
+- Create and enable a new administrator account
+- Navigate menu structures exactly as a human operator
+- Provide clear CSV/JSON reporting per device
 
 Developed for large-scale UPS deployments where vendors/suppliers often leave insecure defaults across multiple branch sites.
 
@@ -37,7 +34,7 @@ Published on PyPI for easy installation.
 ### Install from PyPI (recommended)
 
 ```
-pip install apc-ups-security-auditor
+pip install apc-ups-security-auditor==0.1.4
 ```
 Then install Playwright browsers:
 ```
@@ -88,27 +85,146 @@ pip install "git+https://github.com/hacktivism-github/netauto@development#subdir
 ```
 This will pull only the package from the subfolder, not the whole repo.
 
+---
+
 ## Features
 
-- ✔ Headful Playwright browser automation (podes ver cada passo no browser)
-- ✔ Login automático com credenciais por defeito (`apc/apc`)
-- ✔ Deteção de dispositivos que ainda usam credenciais por defeito
-- ✔ Modo interativo (pergunta por host se deve mudar a password)
-- ✔ **Modo no-prompt (`--auto-change`)** para hardening em massa sem interações
-- ✔ Fluxo completo de mudança de password:
-  - Selecção de idioma (English)
-  - Logon com `apc/apc`
-  - `Configuration → Security → Local Users → Management → apc`
-  - Preenchimento de Current / New / Confirm Password
-  - Clique em `Next` e `Apply` na página de confirmação
-- ✔ Suporte para HTTP e HTTPS (ignora certificados inválidos)
-- ✔ **Relatórios em CSV e JSON** (`--report-csv`, `--report-json`) com:
-  - host
-  - timestamp
-  - se usava credenciais por defeito
-  - se a password foi alterada
-  - estado (ok/timeout/error)
-  - mensagem de erro (quando aplicável)
+### Default Credential Audit
+
+- Attempts login with `apc/apc`
+- Detects whether default credentials are still accepted
+
+### Automated Password Hardening
+
+- UI-driven navigation:
+  - Configuration → Security → Local Users → Management → apc
+  - Fill Current / New / Confirm password fields
+  - “Next” → “Apply” confirmation page
+- Works reliably across multiple firmware versions
+
+### Create a New Administrator Account (Phase 1)
+
+Use:
+
+```
+--create-admin
+--new-admin-user "<your admin user>"
+--new-admin-pass "<password>"
+```
+
+The script will:
+
+- Navigate to *Configuration → Security → Local Users → Management*
+- Click **Add User**
+- **Tick the “Enable” checkbox automatically**
+- Fill username & password
+- Select **Super User**
+- Click **Next → Apply** until fully submitted
+
+### Auto Mode (`--auto`)
+
+Run fully non-interactive:
+```
+--auto
+```
+Good for large deployments.
+
+### CSV / JSON Reporting
+
+Use:
+
+```
+--report-csv results.csv
+--report-json results.json
+```
+Each row includes:
+
+- Host
+- Timestamp
+- Login success
+- Admin creation success
+- New admin username
+- Error state
+
+---
+
+## Install from Source
+
+### 1. Clone the repository
+
+```
+git clone https://github.com/hacktivism-github/netauto.git
+cd netauto/apc-nmc3-ui-scraper
+```
+
+### 2. Create a Python virtual environment
+
+```
+python3 -m venv .venv
+source .venv/bin/activate    # Mac/Linux
+```
+# or:
+```
+.venv\Scripts\activate     # Windows PowerShell
+```
+
+### 3. Install dependencies
+
+```
+pip install -r requirements.txt
+pip install playwright
+playwright install chromium
+```
+
+### 4. Run the tool
+
+Example: Create new admin user on all hosts
+
+```
+apc-ups-audit \
+  --hosts ups_hosts.txt \
+  --https \
+  --headful \
+  --current-user apc \
+  --current-pass "<hardened_apc_password>" \
+  --create-admin \
+  --new-admin-user bai-admin \
+  --new-admin-pass "<StrongPasswordHere>" \
+  --auto \
+  --report-csv phase1_create_admin.csv
+```
+
+---
+
+## CLI Usage
+
+```
+apc-ups-audit --hosts <file> [options]
+```
+
+### Most useful flags:
+
+```
+| Flag                 | Description                           |
+| -------------------- | ------------------------------------- |
+| `--hosts FILE`       | List of UPS IPs (one per line)        |
+| `--create-admin`     | Create a new admin account            |
+| `--new-admin-user`   | Username for the new account          |
+| `--new-admin-pass`   | Password for the new account          |
+| `--current-user`     | User to authenticate as (e.g., `apc`) |
+| `--current-pass`     | Password for existing admin           |
+| `--auto`             | Non-interactive mode                  |
+| `--headful`          | Show the browser window               |
+| `--https`            | Use HTTPS instead of HTTP             |
+| `--report-csv FILE`  | Output results as CSV                 |
+| `--report-json FILE` | Output results as JSON                |
+```
+
+Full help:
+
+```
+apc-ups-audit --help
+```
 
 ---
 
@@ -160,132 +276,11 @@ You may include comments:
 
 ---
 
-## Usage
-
-### 1. Interactive mode (ideal for watching the process)
-
-```
-apc-ups-audit --hosts ups_hosts.txt --headful --https --timeout 30
-```
-
-Flow:
-
-1. Script asks for a new password (this will replace apc).
-2. For each UPS:
-    . Opens browser
-    . Selects English language
-    . Logs in with apc/apc
-    . If defaults still work, asks:
-   ```
-   -> Attempt password change via web UI now? [y/N]:
-    ```
-3. If you type ```y```, it performs the full password-hardening workflow.
-
-### 2. Automatic mode (no prompts)
-
-To harden all UPS devices without asking anything, use:
-
-```
-apc-ups-audit \
-  --hosts ups_hosts.txt \
-  --https \
-  --auto-change
-```
-
-If the login using ```apc/apc``` succeeds:
-   - The tool __does not ask__
-   - It __immediately__ runs the full UI-driven password change
-   - Moves to the next UPS automatically
-
-Combine auto-change with headful mode if you want to visually monitor:
-
-```
-apc-ups-audit \
-  --hosts ups_hosts.txt \
-  --https \
-  --headful \
-  --auto-change
-```
-
-### 3. Generate CSV/JSON Reports
-
-```
-apc-ups-audit \
-  --hosts ups_hosts.txt \
-  --https \
-  --auto-change \
-  --report-csv ups_report.csv \
-  --report-json ups_report.json
-```
-
-The report includes:
-
-```
-| Field                 | Meaning                                |
-| --------------------- | -------------------------------------- |
-| `host`                | UPS IP/hostname                        |
-| `timestamp`           | UTC timestamp                          |
-| `default_credentials` | `True` = still using `apc/apc`         |
-| `password_changed`    | `True` = password successfully updated |
-| `status`              | ok / timeout / error / unknown         |
-| `error`               | error message if applicable            |
-```
-
-__Example CSV line:__
-```
-10.111.9.219,2025-11-27T10:15:00Z,True,True,ok,
-```
-
-### 4. All available arguments
-
-```
-| Parameter        | Description                                   |
-|------------------|-----------------------------------------------|
-| `--hosts`        | Path to file with UPS list                    |
-| `--https`        | Use HTTPS                                     |
-| `--headful`      | Show the browser window                       |
-| `--timeout`      | Timeout (seconds) for page loads              |
-| `--username`     | Username (default: `apc`)                     |
-| `--default-pass` | Default password (default: `apc`)             |
-| `--new-pass`     | New password (if omitted, asks interactively) |
-| `--auto-change`  | Do not prompt; automatically harden devices   |
-| `--report-csv`   | Write CSV report                              |
-| `--report-json`  | Write JSON report                             |
-
-```
-
----
-
-## Password Hardening Workflow
-
-When a device still accepts ```apc/apc```, the tool:
-
-1. Logs in
-
-2. Navigates using clicks, not hovers
-
-3. Opens the apc Super User config
-
-4. Fills:
-
-   - Current Password
-   - New Password
-   - Confirm Password
-5. Clicks Next
-6. Clicks Apply on confirmation page
-7. Confirms success
-8. Moves to next host
-
-The entire process is visible in headful mode.
-
----
-
 ## Demo
 
 ```
 I'll be adding the demo soon!
 ```
-
 ---
 
 ## Disclaimer
@@ -305,6 +300,12 @@ The author is not responsible for misuse or misconfiguration.
 
 This project is licensed under the **MIT License**.  
 See [`LICENSE`](https://github.com/hacktivism-github/netauto/blob/development/LICENSE) for details.
+
+---
+
+## Contributions
+
+PRs, issues, and feature requests are welcome!
 
 ---
 
