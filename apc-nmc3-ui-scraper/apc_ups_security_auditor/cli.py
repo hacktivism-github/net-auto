@@ -206,9 +206,14 @@ def create_admin_user_via_ui(
     headful: bool = False,
 ) -> bool:
     """
-    Create a new Super User admin account using the NMC3 web UI.
+    Create a new Super User / Administrator account using the NMC3 web UI.
 
-    Returns True if creation appears successful, False otherwise.
+    Flow (as in your screenshots):
+      - Configuration -> Security -> Local Users -> Management
+      - Click "Add User"
+      - Fill: User Name, New Password, Confirm Password, User Type, etc.
+      - Click "Next"
+      - On confirmation page, click "Apply"
     """
 
     import time
@@ -247,14 +252,12 @@ def create_admin_user_via_ui(
         print("      -> Clicking 'Add User'…")
         added = False
 
-        # Try button
         try:
             page.get_by_role("button", name="Add User").click(timeout=5000)
             added = True
         except Exception:
             pass
 
-        # Try input[value='Add User']
         if not added:
             try:
                 page.locator("input[value='Add User']").first.click(timeout=5000)
@@ -262,7 +265,6 @@ def create_admin_user_via_ui(
             except Exception:
                 pass
 
-        # Try explicit link to useradd.htm
         if not added:
             try:
                 page.locator("a[href*='useradd']").first.click(timeout=5000)
@@ -282,7 +284,6 @@ def create_admin_user_via_ui(
         if "usercfg.htm" in current_url and "user=" in current_url and current_url.endswith("user="):
             print("      [!] Landed on usercfg.htm?user= (empty). Trying fallback to useradd.htm …")
             try:
-                # Simple fallback: swap to useradd.htm
                 fallback_url = current_url.replace("usercfg.htm?user=", "useradd.htm")
                 page.goto(fallback_url, timeout=8000)
                 page.wait_for_load_state("domcontentloaded")
@@ -294,46 +295,41 @@ def create_admin_user_via_ui(
 
         print(f"      -> Now on page: {current_url}")
 
-        # 6) Ensure access is enabled if such checkbox exists
+        # 6) Enable access if checkbox exists
         try:
             enable_chk = page.get_by_label("Enable")
             if enable_chk.is_visible():
                 enable_chk.check()
                 print("      -> Enabled access for new user.")
         except Exception:
-            # Not all firmwares need this or map the label the same way
             pass
 
         # 7) Fill username
         print(f"      -> Filling new admin user: {new_username}")
         filled_username = False
 
-        # Try a named username input first
+        # Strategy 1: any obvious text input
         try:
-            page.fill("input[name='username']", new_username)
-            filled_username = True
+            text_inputs = page.locator("input[type='text'], input:not([type])")
+            if text_inputs.count() > 0:
+                text_inputs.first.fill(new_username)
+                filled_username = True
         except Exception:
             pass
 
-        # Try label-based selector
+        # Strategy 2: first non-hidden, non-password input
         if not filled_username:
             try:
-                page.get_by_label("User Name").fill(new_username)
-                filled_username = True
-            except Exception:
-                pass
-
-        # Fallback: first empty text input
-        if not filled_username:
-            try:
-                txt = page.locator("input[type='text']").first
-                txt.fill(new_username)
+                generic = page.locator(
+                    "input:not([type='hidden']):not([type='password'])"
+                ).first
+                generic.fill(new_username)
                 filled_username = True
             except Exception:
                 pass
 
         if not filled_username:
-            print("      [!] Could not locate username field.")
+            print("      [!] Could not locate username field (no suitable text input found).")
             return False
 
         # 8) Fill password & confirm password
@@ -347,59 +343,81 @@ def create_admin_user_via_ui(
         pwd_inputs.nth(0).fill(new_password)
         pwd_inputs.nth(1).fill(new_password)
 
-        # 9) Select Super User / Administrator role
-        print("      -> Setting user role to Super User (if possible)…")
+        # 9) Select user role (Super User / Administrator) if possible
+        print("      -> Setting user role (Super User / Administrator) if possible…")
         try:
-            # Try a role dropdown with a reasonable name
             role_select = page.locator("select[name='user_role'], select[name='usertype'], select[name*='Type']")
             if role_select.count() > 0:
                 try:
                     role_select.first.select_option(label="Super User")
                 except Exception:
-                    # Fallback to Administrator if Super User is not present
                     try:
                         role_select.first.select_option(label="Administrator")
                     except Exception:
                         pass
             else:
-                # Maybe it's a radio/checkbox
                 try:
                     page.get_by_label("Super User").check()
                 except Exception:
                     pass
         except Exception:
-            # If nothing works, we just keep the default role.
             pass
 
-        # 10) Click Apply / OK
-        print("      -> Clicking 'Apply' to create new admin user…")
-        submitted = False
+        # 10) Click "Next" on this page
+        print("      -> Clicking 'Next'…")
+        next_clicked = False
         try:
-            page.get_by_role("button", name="Apply").click(timeout=5000)
-            submitted = True
+            # Try generic: any control whose value/text starts with 'Next'
+            page.locator("input[value^='Next'], button:has-text('Next')").first.click(timeout=5000)
+            next_clicked = True
         except Exception:
             pass
 
-        if not submitted:
+        if not next_clicked:
             try:
-                page.locator("input[value='Apply']").first.click(timeout=5000)
-                submitted = True
+                page.get_by_text("Next", exact=False).click(timeout=5000)
+                next_clicked = True
             except Exception:
                 pass
 
-        if not submitted:
-            print("      [!] Could not click Apply to create user.")
+        if not next_clicked:
+            print("      [!] Could not click 'Next' button.")
             return False
 
-        # 11) Wait for completion
+        # Wait for confirmation page (usrcnfrm or similar)
+        try:
+            page.wait_for_load_state("domcontentloaded", timeout=10000)
+            time.sleep(0.5)
+        except Exception:
+            pass
+
+        # 11) On confirmation page, click "Apply"
+        print("      -> On confirmation page, clicking 'Apply'…")
+        applied = False
+        try:
+            page.get_by_role("button", name="Apply").click(timeout=5000)
+            applied = True
+        except Exception:
+            pass
+
+        if not applied:
+            try:
+                page.locator("input[value='Apply']").first.click(timeout=5000)
+                applied = True
+            except Exception:
+                pass
+
+        if not applied:
+            print("      [!] Could not click final 'Apply'.")
+            return False
+
         try:
             page.wait_for_load_state("networkidle", timeout=10000)
         except Exception:
-            # not fatal; some firmwares don't reach networkidle cleanly
             pass
 
         time.sleep(0.5)
-        print("    [✓] New admin user creation flow completed (UI).")
+        print("    [✓] New admin user creation flow completed (Next + Apply).")
         return True
 
     except PlaywrightTimeoutError:
@@ -408,7 +426,6 @@ def create_admin_user_via_ui(
     except Exception as e:
         print(f"    [!] Exception while creating admin user: {e}")
         return False
-
 
         
 def main():
