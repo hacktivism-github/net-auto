@@ -285,13 +285,26 @@ def create_admin_user_via_ui(
 
 
         # 6) Enable access if checkbox exists
+#        try:
+#            enable_chk = page.get_by_label("Enable")
+#            if enable_chk.is_visible():
+#                enable_chk.check()
+#                print("      -> Enabled access for new user.")
+#        except Exception:
+#            pass
+
+        # 6) Enable the user account
+        print("      -> Enabling new user (ticking 'Enable' checkbox)…")
         try:
-            enable_chk = page.get_by_label("Enable")
-            if enable_chk.is_visible():
-                enable_chk.check()
-                print("      -> Enabled access for new user.")
+            # Preferred: checkbox with label "Enable"
+            page.get_by_label("Enable").check()
         except Exception:
-            pass
+            # Fallback: first checkbox on the page
+            try:
+                page.locator("input[type='checkbox']").first.check()
+            except Exception as e:
+                print(f"      [!] Could not tick 'Enable' checkbox: {e}")
+                return False
 
         # 7) Fill username
         print(f"      -> Filling new admin user: {new_username}")
