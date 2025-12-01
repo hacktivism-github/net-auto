@@ -477,13 +477,14 @@ def main():
                 page.goto(url, wait_until="domcontentloaded",
                           timeout=args.timeout * 1000)
 
+'''
                 logged_in = login_via_ui(
                     page,
                     username=args.username,
                     password=args.default_pass,
                     timeout=args.timeout,
                 )
-'''
+
                 if logged_in is True:
                     print(f"    [+] Default credentials are valid on {host}.")
                     result["default_credentials"] = True
