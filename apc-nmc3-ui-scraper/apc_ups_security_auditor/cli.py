@@ -333,37 +333,53 @@ def create_admin_user_via_ui(
         
 def main():
     parser = argparse.ArgumentParser(
-        description="Headful APC/Schneider UPS audit (NMC3) for default credentials "
-                    "via full UI automation."
+        description=(
+            "APC/Schneider UPS (NMC3) automation tool: "
+            "log in, optionally create a new admin user, and report results."
+        )
     )
+
+    # ----------------------------------------------------------------------
+    # INPUT / CONNECTION
+    # ----------------------------------------------------------------------
     parser.add_argument(
         "--hosts",
         required=True,
         help="Path to file containing UPS IPs/hostnames (one per line).",
     )
     parser.add_argument(
-        "--username",
-        default="apc",
-        help="Username to test (default: apc).",
+        "--https",
+        action="store_true",
+        help="Use HTTPS instead of HTTP to open the web UI.",
     )
     parser.add_argument(
-        "--default-pass",
-        default="apc",
-        help="Default password to test (default: apc).",
+        "--timeout",
+        type=float,
+        default=30.0,
+        help="Timeout (seconds) for page loads and login (default: 30).",
     )
     parser.add_argument(
-        "--new-pass",
-        help="New password to set when default is found. If omitted, you will be prompted.",
+        "--headful",
+        action="store_true",
+        help="Run the browser in headful mode (visible window). Default is headless.",
     )
+
+    # ----------------------------------------------------------------------
+    # LOGIN CREDENTIALS (CURRENT USER)
+    # ----------------------------------------------------------------------
     parser.add_argument(
         "--current-user",
         default="apc",
-        help="Username to use for initial login (default: apc)",
+        help="Username to use for initial login (default: apc).",
     )
     parser.add_argument(
         "--current-pass",
-        help="Password to use for initial login. If omitted, will prompt.",
+        help="Password to use for initial login. If omitted, you will be prompted.",
     )
+
+    # ----------------------------------------------------------------------
+    # PHASE 1 – CREATE NEW ADMIN USER
+    # ----------------------------------------------------------------------
     parser.add_argument(
         "--create-admin",
         action="store_true",
@@ -375,34 +391,20 @@ def main():
     )
     parser.add_argument(
         "--new-admin-pass",
-        help="New admin password to set (used with --create-admin). If omitted, will prompt.",
+        help=(
+            "New admin password to set (used with --create-admin). "
+            "If omitted and not in --auto, you will be prompted."
+        ),
     )
     parser.add_argument(
         "--auto",
         action="store_true",
         help="Run without interactive prompts for admin creation (non-interactive mode).",
     )
-    parser.add_argument(
-        "--https",
-        action="store_true",
-        help="Use HTTPS instead of HTTP to open the web UI.",
-    )
-    parser.add_argument(
-        "--headful",
-        action="store_true",
-        help="Run the browser in headful mode (visible window). Default is headless.",
-    )
-    parser.add_argument(
-        "--timeout",
-        type=float,
-        default=30.0,
-        help="Timeout (seconds) for page loads and login (default: 30).",
-    )
-    parser.add_argument(
-        "--auto-change",
-        action="store_true",
-        help="Automatically change password on hosts with default credentials, without prompting.",
-    )
+
+    # ----------------------------------------------------------------------
+    # REPORTING
+    # ----------------------------------------------------------------------
     parser.add_argument(
         "--report-csv",
         help="Path to CSV report file to write scan results (optional).",
@@ -411,160 +413,129 @@ def main():
         "--report-json",
         help="Path to JSON report file to write scan results (optional).",
     )
+
     args = parser.parse_args()
 
-    if not args.new_pass:
-        pw1 = getpass.getpass("New password to use on devices with default creds: ")
-        pw2 = getpass.getpass("Confirm new password: ")
-        if pw1 != pw2:
-            print("Passwords do not match. Aborting.")
-            sys.exit(1)
-        args.new_pass = pw1
-
-    # If we are creating an admin and no new-admin-pass was provided, prompt once
-    if args.create_admin and not args.new_admin_pass:
-        while True:
-            pwd1 = getpass.getpass("New admin user password: ")
-            pwd2 = getpass.getpass("Confirm new admin user password: ")
-            if pwd1 != pwd2:
-                print("Passwords do not match, try again.")
-            elif not pwd1:
-                print("Password cannot be empty.")
-            else:
-                args.new_admin_pass = pwd1
-                break
-
-    # If no current-pass was provided, prompt once
+    # ----------------------------------------------------------------------
+    # VALIDATION / PASSWORD PROMPTS
+    # ----------------------------------------------------------------------
+    # current-pass (for login)
     if not args.current_pass:
         args.current_pass = getpass.getpass(f"Password for {args.current_user}: ")
 
-    scheme = "https" if args.https else "http"
-    hosts = load_hosts(args.hosts)
+    # new-admin-user / new-admin-pass validation
+    if args.create_admin:
+        if not args.new_admin_user:
+            print("[!] --new-admin-user is required when using --create-admin.")
+            sys.exit(1)
 
+        if not args.new_admin_pass:
+            if args.auto:
+                print("[!] --new-admin-pass is required together with --create-admin and --auto.")
+                sys.exit(1)
+            else:
+                while True:
+                    pwd1 = getpass.getpass("New admin user password: ")
+                    pwd2 = getpass.getpass("Confirm new admin user password: ")
+                    if pwd1 != pwd2:
+                        print("Passwords do not match, try again.")
+                    elif not pwd1:
+                        print("Password cannot be empty.")
+                    else:
+                        args.new_admin_pass = pwd1
+                        break
+
+    # ----------------------------------------------------------------------
+    # LOAD HOSTS
+    # ----------------------------------------------------------------------
+    try:
+        hosts = load_hosts(args.hosts)
+    except Exception as e:
+        print(f"[!] Could not read hosts file '{args.hosts}': {e}")
+        sys.exit(1)
+
+    if not hosts:
+        print(f"[!] No hosts found in {args.hosts}.")
+        sys.exit(1)
+
+    scheme = "https" if args.https else "http"
     print(f"Loaded {len(hosts)} host(s) from {args.hosts}")
     print(f"Using scheme: {scheme.upper()}")
     print(f"Browser will be {'HEADFUL (visible)' if args.headful else 'headless'}.\n")
-    results = []  # para CSV/JSON    
 
-    default_hosts = []
-    not_default_hosts = []
-    unknown_hosts = []
+    # ----------------------------------------------------------------------
+    # PLAYWRIGHT LOOP
+    # ----------------------------------------------------------------------
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
+    results = []
+    csv_fields = [
+        "host",
+        "timestamp",
+        "login_ok",
+        "admin_created",
+        "new_admin_user",
+        "status",
+        "error",
+    ]
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=not args.headful)
+
         for host in hosts:
             url = f"{scheme}://{host}/"
-            print(f"[*] Opening {url} ...")
+            print("\n==============================================================")
+            print(f"[*] Processing host: {host}")
+            print("==============================================================")
+            print(f"    -> Opening {url} ...")
 
             context = browser.new_context(ignore_https_errors=True)
             page = context.new_page()
 
-            # valores por defeito para o relatório
             result = {
                 "host": host,
                 "timestamp": datetime.utcnow().isoformat(),
-                #"default_credentials": None,   # True / False / None | Removed on version 0.1.4
-                #"password_changed": False, # Removed on version 0.1.4
-                "login_ok": False, # Added on version 0.1.4
-                "admin_created": False, # Added on version 0.1.4
-                "new_admin_user": args.new_admin_user if args.create_admin else "", # Added on version 0.1.4
-                "status": "unknown",           # ok / timeout / error / unknown
+                "login_ok": False,
+                "admin_created": False,
+                "new_admin_user": args.new_admin_user if args.create_admin else "",
+                "status": "unknown",
                 "error": "",
             }
 
             try:
-                page.goto(url, wait_until="domcontentloaded",
-                          timeout=args.timeout * 1000)
+                page.goto(
+                    url,
+                    wait_until="domcontentloaded",
+                    timeout=args.timeout * 1000,
+                )
 
-'''
+                # LOGIN PHASE
+                print(f"    -> Logging in as {args.current_user} …")
                 logged_in = login_via_ui(
                     page,
-                    username=args.username,
-                    password=args.default_pass,
+                    username=args.current_user,
+                    password=args.current_pass,
                     timeout=args.timeout,
                 )
 
-                if logged_in is True:
-                    print(f"    [+] Default credentials are valid on {host}.")
-                    result["default_credentials"] = True
-                    result["status"] = "ok"
-                    # decidir se muda password automaticamente ou pergunta
-                    do_change = False
-                    if args.auto_change:
-                        do_change = True
-                        print("    [*] --auto-change enabled: will change password automatically.")
-                    else:
-                        while True:
-                            ans = input(
-                                "    -> Attempt password change via web UI now? [y/N]: "
-                            ).strip().lower()
-                            if ans in ("y", "yes"):
-                                do_change = True
-                                break
-                            elif ans in ("n", "no", ""):
-                                do_change = False
-                                print("    [ ] Skipping password change on this host.")
-                                break
-                            else:
-                                print("    Please answer 'y' or 'n'.")
-
-                    if do_change:
-                        success = change_password_via_ui(
-                            page,
-                            new_password=args.new_pass,
-                            current_password=args.default_pass,
-                        )
-                        if success:
-                            result["password_changed"] = True
-                        else:
-                            result["password_changed"] = False
-                            result["error"] = "password_change_failed"
-
-                elif logged_in is False:
-                    print(f"    [-] Default credentials are NOT accepted on {host}.")
-                    result["default_credentials"] = False
-                    result["status"] = "ok"
-                else:
-                    print(f"    [!] Could not determine login status for {host}.")
-                    result["default_credentials"] = None
-                    result["status"] = "unknown"
-
-                if args.headful:
-                    input("    -> Press ENTER to continue to the next host: ")
-
-            except PlaywrightTimeoutError:
-                print(f"    [!] Timeout while loading {url}.")
-                result["status"] = "timeout"
-                result["error"] = "timeout"
-            except Exception as e:
-                print(f"    [!] Error while processing {host}: {e}")
-                result["status"] = "error"
-                result["error"] = str(e)
-            finally:
-                results.append(result)
-                context.close()
-
-        browser.close()
-'''
-
                 if not logged_in:
-                    print(f"    [-] Login failed for {host} with {args.current_user}.")
+                    # logged_in can be False or None; treat as failure here
+                    print("    [-] Login FAILED.")
                     result["status"] = "login_failed"
+                    result["error"] = "login_failed"
                     results.append(result)
                     context.close()
                     continue
 
-                print(f"    [✓] Login successful on {host} as {args.current_user}.")
+                print("    [✓] Login successful.")
                 result["login_ok"] = True
-                result["status"] = "ok"
+                result["status"] = "logged_in"
 
-                # ---- PHASE 1: CREATE NEW ADMIN ----
+                # PHASE 1: CREATE NEW ADMIN USER
                 if args.create_admin:
                     do_create = True
 
                     if not args.auto:
-                        # Ask per host if not in --auto mode
                         while True:
                             ans = input(
                                 f"    -> Create new admin user '{args.new_admin_user}' on {host}? [y/N]: "
@@ -579,24 +550,28 @@ def main():
                                 print("    Please answer 'y' or 'n'.")
 
                     if do_create:
-                        success = create_admin_user_via_ui(
+                        print(f"    -> Creating new admin user '{args.new_admin_user}' …")
+                        created = create_admin_user_via_ui(
                             page,
                             new_username=args.new_admin_user,
                             new_password=args.new_admin_pass,
                             headful=args.headful,
                         )
-                        if success:
+                        if created:
+                            print("    [✓] Admin user created successfully.")
                             result["admin_created"] = True
+                            result["status"] = "admin_created"
                         else:
+                            print("    [!] Admin user creation FAILED.")
                             result["admin_created"] = False
                             result["status"] = "admin_create_failed"
-                            result["error"] = "create_admin_failed"
+                            result["error"] = "admin_create_failed"
 
                 if args.headful:
-                    input("    -> Press ENTER to continue to the next host: ")
+                    input("    -> Press ENTER to continue to the next host…")
 
             except PlaywrightTimeoutError:
-                print(f"    [!] Timeout while processing {url}.")
+                print(f"    [!] TIMEOUT while processing {url}.")
                 result["status"] = "timeout"
                 result["error"] = "timeout"
             except Exception as e:
@@ -604,20 +579,18 @@ def main():
                 result["status"] = "error"
                 result["error"] = str(e)
             finally:
-                results.append(result)
                 context.close()
+                results.append(result)
 
         browser.close()
-        
-    # escrever CSV se solicitado
+
+    # ----------------------------------------------------------------------
+    # REPORT: CSV
+    # ----------------------------------------------------------------------
     if args.report_csv:
-        #fieldnames = ["host", "timestamp", "default_credentials", | Removed on version 0.1.4
-        #              "password_changed", "status", "error"] | Removed on version 0.1.4
-        fieldnames = ["host", "timestamp", "login_ok", "admin_created",
-                      "new_admin_user", "status", "error"]  # Added on version 0.1.4
         try:
             with open(args.report_csv, "w", newline="", encoding="utf-8") as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer = csv.DictWriter(f, fieldnames=csv_fields)
                 writer.writeheader()
                 for row in results:
                     writer.writerow(row)
@@ -625,7 +598,9 @@ def main():
         except Exception as e:
             print(f"\n[!] Failed to write CSV report: {e}")
 
-    # escrever JSON se solicitado
+    # ----------------------------------------------------------------------
+    # REPORT: JSON
+    # ----------------------------------------------------------------------
     if args.report_json:
         try:
             with open(args.report_json, "w", encoding="utf-8") as f:
@@ -634,18 +609,7 @@ def main():
         except Exception as e:
             print(f"[!] Failed to write JSON report: {e}")
 
-    print("\n=== SUMMARY ===")
-    print(f"Hosts with DEFAULT credentials still valid: {len(default_hosts)}")
-    for h in default_hosts:
-        print(f"  - {h}")
-
-    print(f"\nHosts where default is NOT accepted: {len(not_default_hosts)}")
-    for h in not_default_hosts:
-        print(f"  - {h}")
-
-    print(f"\nHosts with UNKNOWN status: {len(unknown_hosts)}")
-    for h in unknown_hosts:
-        print(f"  - {h}")
+    print("\n[*] All hosts processed.\n")
 
 
 if __name__ == "__main__":
