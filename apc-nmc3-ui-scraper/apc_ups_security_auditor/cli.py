@@ -279,21 +279,10 @@ def create_admin_user_via_ui(
         page.wait_for_load_state("domcontentloaded", timeout=10000)
         time.sleep(0.5)
 
-        # Some firmwares incorrectly land on usercfg.htm?user=
-        current_url = page.url.lower()
-        if "usercfg.htm" in current_url and "user=" in current_url and current_url.endswith("user="):
-            print("      [!] Landed on usercfg.htm?user= (empty). Trying fallback to useradd.htm …")
-            try:
-                fallback_url = current_url.replace("usercfg.htm?user=", "useradd.htm")
-                page.goto(fallback_url, timeout=8000)
-                page.wait_for_load_state("domcontentloaded")
-                time.sleep(0.5)
-                current_url = page.url.lower()
-            except Exception as e:
-                print(f"      [!] Fallback to useradd.htm failed: {e}")
-                return False
-
+        # After clicking "Add User" we land on usercfg.htm?user= (empty form)
+        current_url = page.url
         print(f"      -> Now on page: {current_url}")
+
 
         # 6) Enable access if checkbox exists
         try:
@@ -426,7 +415,6 @@ def create_admin_user_via_ui(
     except Exception as e:
         print(f"    [!] Exception while creating admin user: {e}")
         return False
-
         
 def main():
     parser = argparse.ArgumentParser(
