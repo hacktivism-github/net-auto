@@ -41,11 +41,7 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
 
     try:
         # Wait specifically for the username input, instead of "domcontentloaded"
-        #page.wait_for_load_state("domcontentloaded", timeout=timeout * 1000)
-        page.wait_for_selector(
-            "input[type='text'], input[name='login_username']",
-            timeout=5000
-        )
+        page.wait_for_selector("input[name='login_username']", timeout=5000)
         print("    [*] Login page ready.")
         
         # 1) Set language to English (you'll see the dropdown change)
@@ -671,8 +667,12 @@ def main():
                             result["status"] = "admin_create_failed"
                             result["error"] = "admin_create_failed"
 
-                if args.headful:
-                    input("    -> Press ENTER to continue to the next host…")
+#                if args.headful:
+#                    input("    -> Press ENTER to continue to the next host…")
+
+                # Only pause between hosts if we're running headful AND not in --auto mode
+                if args.headful and not args.auto:
+                    input("    -> Press ENTER to continue to the next host: ")
 
             except PlaywrightTimeoutError:
                 print(f"    [!] TIMEOUT while processing {url}.")
