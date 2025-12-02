@@ -40,8 +40,14 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
     import time
 
     try:
-        page.wait_for_load_state("domcontentloaded", timeout=timeout * 1000)
-
+        # Wait specifically for the username input, instead of "domcontentloaded"
+        #page.wait_for_load_state("domcontentloaded", timeout=timeout * 1000)
+        page.wait_for_selector(
+            "input[type='text'], input[name='login_username']",
+            timeout=5000
+        )
+        print("    [*] Login page ready.")
+        
         # 1) Set language to English (you'll see the dropdown change)
         try:
             lang_select = page.locator("select").first
