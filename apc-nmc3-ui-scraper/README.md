@@ -189,7 +189,7 @@ apc-ups-audit \
   --current-user apc \
   --current-pass "<hardened_apc_password>" \
   --create-admin \
-  --new-admin-user bai-admin \
+  --new-admin-user <your admin user> \
   --new-admin-pass "<StrongPasswordHere>" \
   --auto \
   --report-csv phase1_create_admin.csv
@@ -204,7 +204,7 @@ Powershell:
   --current-user apc `
   --current-pass "<hardened_apc_password>" `
   --create-admin `
-  --new-admin-user "bai-admin" `
+  --new-admin-user "<your admin user>" `
   --new-admin-pass "<StrongPass>" `
   --auto `
   --report-csv phase1_create_admin.csv
