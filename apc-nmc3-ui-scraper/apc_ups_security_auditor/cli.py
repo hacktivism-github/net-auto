@@ -11,6 +11,7 @@ from playwright.sync_api import (
 import csv
 import json
 from datetime import datetime
+from apc_ups_security_auditor import __version__
 
 
 def load_hosts(path: str) -> List[str]:
