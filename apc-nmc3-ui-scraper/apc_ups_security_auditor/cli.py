@@ -43,6 +43,7 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
         # Wait specifically for the username input, instead of "domcontentloaded"
         page.wait_for_selector("input[name='login_username']", timeout=5000)
         print("    [*] Login page ready.")
+
         
         # 1) Set language to English (you'll see the dropdown change)
         try:
@@ -57,12 +58,14 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
 
         # 2) Fill username & password (you'll see the typing)
         filled = False
+
+        # Preferred: use the explicit name= fields we know exist
         try:
-            page.get_by_label("User Name").fill(username)
-            page.get_by_label("Password").fill(password)
+            page.fill("input[name='login_username']", username)
+            page.fill("input[name='login_password']", password)
             filled = True
         except Exception:
-            # Fallback if labels are not wired correctly
+            # Fallback if something is different on some host/firmware
             try:
                 page.locator("input[type='text']").first.fill(username)
                 page.locator("input[type='password']").first.fill(password)
@@ -74,6 +77,7 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
             return None
 
         print("    [*] Filled username and password.")
+        
 
         # 3) Click "Log On"
         try:
@@ -86,7 +90,7 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
         # 4) Wait for home.htm (successful login)
         try:
             page.wait_for_url("**/home.htm*", timeout=timeout * 1000)
-            print("    [✓] Login successful (default creds worked).")
+            print("    [✓] Login successful as {username}.")
             return True
         except PlaywrightTimeoutError:
             print("    [-] Login did not reach home.htm – default credentials probably NOT valid.")
@@ -285,16 +289,6 @@ def create_admin_user_via_ui(
         current_url = page.url
         print(f"      -> Now on page: {current_url}")
 
-
-        # 6) Enable access if checkbox exists
-#        try:
-#            enable_chk = page.get_by_label("Enable")
-#            if enable_chk.is_visible():
-#                enable_chk.check()
-#                print("      -> Enabled access for new user.")
-#        except Exception:
-#            pass
-
         # 6) Enable the user account
         print("      -> Enabling new user (ticking 'Enable' checkbox)…")
         try:
@@ -455,13 +449,34 @@ def main():
     parser.add_argument(
         "--timeout",
         type=float,
-        default=30.0,
+        default=15.0,
         help="Timeout (seconds) for page loads and login (default: 30).",
     )
     parser.add_argument(
         "--headful",
         action="store_true",
         help="Run the browser in headful mode (visible window). Default is headless.",
+    )
+
+    # ----------------------------------------------------------------------
+    # DEFAULT CREDENTIALS (apc/apc)
+    # ----------------------------------------------------------------------
+    parser.add_argument(
+        "--default-user",
+        default="apc",
+        help="Default username to test first (default: apc).",
+    )
+    parser.add_argument(
+        "--default-pass",
+        default="apc",
+        help="Default password to test first (default: apc).",
+    )
+    parser.add_argument(
+        "--apc-new-pass",
+        help=(
+            "New hardened password to set for the default user (e.g. 'apc') "
+            "when default credentials are still valid. If omitted, you will be prompted once."
+        ),
     )
 
     # ----------------------------------------------------------------------
@@ -519,6 +534,25 @@ def main():
     # ----------------------------------------------------------------------
     # VALIDATION / PASSWORD PROMPTS
     # ----------------------------------------------------------------------
+    # Hardened password for the default 'apc' user (if default login still works)
+    if not args.apc_new_pass:
+        print("A default password hardening step is enabled for user "
+              f"'{args.default_user}' when default credentials still work.")
+        while True:
+            pw1 = getpass.getpass(
+                f"New hardened password for '{args.default_user}': "
+            )
+            pw2 = getpass.getpass(
+                f"Confirm new hardened password for '{args.default_user}': "
+            )
+            if pw1 != pw2:
+                print("Passwords do not match, try again.")
+            elif not pw1:
+                print("Password cannot be empty.")
+            else:
+                args.apc_new_pass = pw1
+                break
+    # ----------------------------------------------------------------------    
     # current-pass (for login)
     if not args.current_pass:
         args.current_pass = getpass.getpass(f"Password for {args.current_user}: ")
@@ -573,12 +607,15 @@ def main():
         "host",
         "timestamp",
         "login_ok",
+        "default_login_ok",
+        "fallback_login_ok",
+        "apc_password_hardened",
         "admin_created",
         "new_admin_user",
         "status",
         "error",
     ]
-
+    
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=not args.headful)
 
@@ -595,7 +632,10 @@ def main():
             result = {
                 "host": host,
                 "timestamp": datetime.utcnow().isoformat(),
-                "login_ok": False,
+                "login_ok": False,              # any successful login
+                "default_login_ok": False,      # login with default creds?
+                "fallback_login_ok": False,     # login with current-user/current-pass?
+                "apc_password_hardened": False, # did we harden default user's password?
                 "admin_created": False,
                 "new_admin_user": args.new_admin_user if args.create_admin else "",
                 "status": "unknown",
@@ -609,48 +649,56 @@ def main():
                     timeout=args.timeout * 1000,
                 )
 
-                # LOGIN PHASE
-                print(f"    -> Logging in as {args.current_user} …")
-                logged_in = login_via_ui(
+                # ----------------------------------------------------------
+                # STEP 1 – Try default credentials (apc/apc)
+                # ----------------------------------------------------------
+                print(
+                    f"    -> Trying default credentials "
+                    f"{args.default_user}/{args.default_pass} …"
+                )
+                logged_default = login_via_ui(
                     page,
-                    username=args.current_user,
-                    password=args.current_pass,
+                    username=args.default_user,
+                    password=args.default_pass,
                     timeout=args.timeout,
                 )
 
-                if not logged_in:
-                    # logged_in can be False or None; treat as failure here
-                    print("    [-] Login FAILED.")
-                    result["status"] = "login_failed"
-                    result["error"] = "login_failed"
-                    results.append(result)
-                    context.close()
-                    continue
+                if logged_default:
+                    result["login_ok"] = True
+                    result["default_login_ok"] = True
+                    result["status"] = "default_login_ok"
+                    print(
+                        f"    [✓] Default login succeeded as {args.default_user}. "
+                        f"Hardening password and creating admin if requested…"
+                    )
 
-                print("    [✓] Login successful.")
-                result["login_ok"] = True
-                result["status"] = "logged_in"
+                    # ------------------------------------------------------
+                    # STEP 2 – Harden 'apc' password
+                    # ------------------------------------------------------
+                    print(
+                        f"    -> Hardening password for '{args.default_user}' "
+                        f"on {host}…"
+                    )
+                    hardened = change_password_via_ui(
+                        page,
+                        new_password=args.apc_new_pass,
+                        current_password=args.default_pass,
+                    )
+                    if hardened:
+                        print("    [✓] Default user password hardened successfully.")
+                        result["apc_password_hardened"] = True
+                    else:
+                        print("    [!] Failed to harden default user password.")
+                        result["error"] = "apc_harden_failed"
 
-                # PHASE 1: CREATE NEW ADMIN USER
-                if args.create_admin:
-                    do_create = True
-
-                    if not args.auto:
-                        while True:
-                            ans = input(
-                                f"    -> Create new admin user '{args.new_admin_user}' on {host}? [y/N]: "
-                            ).strip().lower()
-                            if ans in ("y", "yes"):
-                                do_create = True
-                                break
-                            elif ans in ("n", "no", ""):
-                                do_create = False
-                                break
-                            else:
-                                print("    Please answer 'y' or 'n'.")
-
-                    if do_create:
-                        print(f"    -> Creating new admin user '{args.new_admin_user}' …")
+                    # ------------------------------------------------------
+                    # STEP 3 – Create new admin user (if requested)
+                    # ------------------------------------------------------
+                    if args.create_admin:
+                        print(
+                            f"    -> Creating new admin user "
+                            f"'{args.new_admin_user}' …"
+                        )
                         created = create_admin_user_via_ui(
                             page,
                             new_username=args.new_admin_user,
@@ -664,11 +712,70 @@ def main():
                         else:
                             print("    [!] Admin user creation FAILED.")
                             result["admin_created"] = False
-                            result["status"] = "admin_create_failed"
-                            result["error"] = "admin_create_failed"
+                            if not result["error"]:
+                                result["error"] = "admin_create_failed"
 
-#                if args.headful:
-#                    input("    -> Press ENTER to continue to the next host…")
+                else:
+                    # ------------------------------------------------------
+                    # STEP 4 – Default login failed, try fallback
+                    # ------------------------------------------------------
+                    print(
+                        "    [-] Default login failed or undetermined. "
+                        "Trying fallback credentials…"
+                    )
+
+                    # reload login page for a clean attempt
+                    page.goto(
+                        url,
+                        wait_until="domcontentloaded",
+                        timeout=args.timeout * 1000,
+                    )
+
+                    print(
+                        f"    -> Trying fallback login as "
+                        f"{args.current_user} …"
+                    )
+                    logged_fallback = login_via_ui(
+                        page,
+                        username=args.current_user,
+                        password=args.current_pass,
+                        timeout=args.timeout,
+                    )
+
+                    if not logged_fallback:
+                        print("    [-] Fallback login FAILED.")
+                        result["status"] = "login_failed"
+                        result["error"] = "both_logins_failed"
+                        results.append(result)
+                        context.close()
+                        continue
+
+                    print("    [✓] Fallback login successful.")
+                    result["login_ok"] = True
+                    result["fallback_login_ok"] = True
+                    result["status"] = "logged_in_fallback"
+
+                    # STEP 3 again – create admin (if requested) from fallback session
+                    if args.create_admin:
+                        print(
+                            f"    -> Creating new admin user "
+                            f"'{args.new_admin_user}' …"
+                        )
+                        created = create_admin_user_via_ui(
+                            page,
+                            new_username=args.new_admin_user,
+                            new_password=args.new_admin_pass,
+                            headful=args.headful,
+                        )
+                        if created:
+                            print("    [✓] Admin user created successfully.")
+                            result["admin_created"] = True
+                            result["status"] = "admin_created"
+                        else:
+                            print("    [!] Admin user creation FAILED.")
+                            result["admin_created"] = False
+                            if not result["error"]:
+                                result["error"] = "admin_create_failed"
 
                 # Only pause between hosts if we're running headful AND not in --auto mode
                 if args.headful and not args.auto:
@@ -687,6 +794,7 @@ def main():
                 results.append(result)
 
         browser.close()
+
 
     # ----------------------------------------------------------------------
     # REPORT: CSV
