@@ -39,9 +39,9 @@ Published on PyPI for easy installation.
 ## Features
 ✔ Detect if default credentials still work
 
-If the UPS still accepts apc/apc, the tool can automatically:
+If the UPS still accepts `apc`/`apc`, the tool can automatically:
 
-- change the password of the ```apc``` account
+- change the password of the `apc` account
 
 - create a new admin user
 
@@ -308,4 +308,5 @@ PRs, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
