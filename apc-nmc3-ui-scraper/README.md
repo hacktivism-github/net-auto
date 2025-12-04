@@ -214,27 +214,27 @@ apc-ups-audit \
 
   ## Command Line Options
 
- | __Flag__                         | __Purpose__                                                                   |
- | -------------------------------- | ----------------------------------------------------------------------------- |
- | -h, --help                       ! show this help message and exit                                               |
- | `--version`                      ! show program's version number and exit                                        |
- | `--hosts` HOSTS                  | Path to file containing UPS IPs/hostnames (one per line).                     |
- | `--https`                        | Use HTTPS instead of HTTP to open the web UI.                                 |
- | `--timeout` TIMEOUT              | Timeout (seconds) for page loads and login (default: 30).                     |
- | `--headful`                      | Run the browser in headful mode (visible window). Default is headless.        |
- | `--default-user` DEFAULT_USER    | Default username to test first (default: apc).                                |
- | `--default-pass` DEFAULT_PASS    | Default password to test first (default: apc).                                |
- | `--apc-new-pass` APC_NEW_PASS    |New hardened password to set for the default user (e.g. 'apc') when default    |
- |                                  | credentials are still valid. If omitted, you will be prompted once.           |
- | `--current-user` CURRENT_USER    | Username to use for initial login (default: apc).                             |
- | `--current-pass` CURRENT_PASS    | Password to use for initial login. If omitted, you will be prompted.          |
- | `--create-admin`                 | Create a new Super User admin account on hosts where login succeeds.          |
- | `--new-admin-user` NEW_ADMIN_USER| New admin username to create (used with --create-admin).                      |
- | `--new-admin-pass` NEW_ADMIN_PASS| New admin password to set (used with --create-admin). If omitted and not in   |
- |                                  | --auto, you will be prompted.                                                 |
- | `--auto`                         | Run without interactive prompts for admin creation (non-interactive mode).    |
- | `--report-csv` REPORT_CSV        | Path to CSV report file to write scan results (optional).                     |
- | `--report-json` REPORT_JSON      | Path to JSON report file to write scan results (optional).                    |
+ | __Flag__                          | __Purpose__                                                                   |
+ | --------------------------------- | ----------------------------------------------------------------------------- |
+ | -h, --help                        | show this help message and exit                                               |
+ | `--version`                       | show program's version number and exit                                        |
+ | `--hosts` HOSTS                   | Path to file containing UPS IPs/hostnames (one per line).                     |
+ | `--https`                         | Use HTTPS instead of HTTP to open the web UI.                                 |
+ | `--timeout` TIMEOUT               | Timeout (seconds) for page loads and login (default: 30).                     |
+ | `--headful`                       | Run the browser in headful mode (visible window). Default is headless.        |
+ | `--default-user` DEFAULT_USER     | Default username to test first (default: apc).                                |
+ | `--default-pass` DEFAULT_PASS     | Default password to test first (default: apc).                                |
+ | `--apc-new-pass` APC_NEW_PASS     | New hardened password to set for the default user (e.g. 'apc') when default   |
+ |                                   | credentials are still valid. If omitted, you will be prompted once.           |
+ | `--current-user` CURRENT_USER     | Username to use for initial login (default: apc).                             |
+ | `--current-pass` CURRENT_PASS     | Password to use for initial login. If omitted, you will be prompted.          |
+ | `--create-admin`                  | Create a new Super User admin account on hosts where login succeeds.          |
+ | `--new-admin-user` NEW_ADMIN_USER | New admin username to create (used with --create-admin).                      |
+ | `--new-admin-pass` NEW_ADMIN_PASS | New admin password to set (used with --create-admin). If omitted and not in   |
+ |                                   | --auto, you will be prompted.                                                 |
+ | `--auto`                          | Run without interactive prompts for admin creation (non-interactive mode).    |
+ | `--report-csv` REPORT_CSV         | Path to CSV report file to write scan results (optional).                     |
+ | `--report-json` REPORT_JSON       | Path to JSON report file to write scan results (optional).                    |
 
 ---
 
