@@ -134,7 +134,7 @@ This will pull only the package from the subfolder, not the whole repo.
 192.168.x.x
 ...
 ```
-__Note:__ use **`** to change the line (if using Windows PowerShell).
+__Note:__ use **`** (grave accent) to change the line (if using Windows PowerShell).
 
 - Basic command (recommended)
 
@@ -308,5 +308,6 @@ PRs, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
