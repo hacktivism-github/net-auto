@@ -18,7 +18,7 @@ Automated security auditing and UI-driven hardening for Schneider Electric APC U
 
 This tool automates browser interaction with the Schneider/APC NMC3 web interface to:
 
-- Detect if default credentials (apc/apc) still work
+- Detect if default credentials (`apc`/`apc`) still work
 
 - Automatically harden the default password
 
@@ -308,3 +308,4 @@ PRs, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
