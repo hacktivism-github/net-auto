@@ -76,7 +76,7 @@ Ideal for audits, change-control logs, and compliance evidence.
 ## Installation
 __Option 1__ — Install from PyPI (preferred)
 ```
-pip install apc-ups-audit==1.0.5-12032025
+pip install apc-ups-audit==1.0.6
 ```
 
 This installs the CLI tool:
@@ -308,6 +308,7 @@ PRs, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
