@@ -227,6 +227,68 @@ apc-ups-audit \
 
   ---
 
+  ## Example Output (Headful + Auto)
+
+```
+(.venv) PS C:\Users\<user>\netauto\apc-nmc3-ui-scraper> apc-ups-audit.exe `
+>>   --hosts ups_hosts.txt `
+>>   --https `
+>>   --headful `
+>>   --apc-new-pass "Your hardened password" `
+>>   --create-admin `
+>>   --new-admin-user your admin user `
+>>   --new-admin-pass ""Your hardened password" `
+>>   --auto `
+>>   --report-csv report.csv
+Loaded 2 host(s) from ups_hosts.txt
+Using scheme: HTTPS
+Browser will be HEADFUL (visible).
+
+
+==============================================================
+[*] Processing host: <IP Address>
+==============================================================
+    -> Opening https://<IP Address>/ ...
+    -> Trying default credentials apc/apc …
+    [*] Login page ready.
+    [*] Set language to English.
+    [*] Filled username and password.
+    [*] Clicked Log On, waiting for home page...
+    [✓] Login successful.
+    [✓] Default login succeeded as apc. Hardening password and creating admin if requested…
+    -> Hardening password for 'apc' on <IP Address>…
+    [*] Navigating to User Management (click-only navigation)...
+      -> Clicking 'Configuration'
+      -> Clicking 'Security'
+      -> Clicking 'Local Users'
+      -> Clicking 'Management' (Local Users / userman.htm)
+      -> Clicking user 'apc' under Super User Management
+      -> Filling Current / New / Confirm Password fields...
+      -> Clicking 'Next' (or fallback 'Apply')...
+      -> Waiting for final confirmation page...
+      -> Clicking FINAL 'Apply'
+    [✓] Password change fully confirmed.
+    [✓] Default user password hardened successfully.
+    -> Creating new admin user 'your admin user' …
+    [*] Navigating to Local Users to create admin user...
+      -> Clicking 'Configuration'
+      -> Clicking 'Security'
+      -> Clicking 'Local Users'
+      -> Opening 'Management' (user list)
+      -> Clicking 'Add User'…
+      -> Now on page: https://<IP Address>/NMC/uXfKb-aEKZloM5mXKqZlBg/usercfg.htm?user=
+      -> Enabling new user (ticking 'Enable' checkbox)…
+      -> Filling new admin user: your admin user
+      -> Filling password fields…
+      -> Setting user role (Super User / Administrator) if possible…
+      -> Clicking 'Next'…
+      -> On confirmation page, clicking 'Apply'…
+    [✓] New admin user creation flow completed (Next + Apply).
+    [✓] Admin user created successfully.
+```
+  
+  ---
+
   ## Command Line Options
 
  | __Flag__                          | __Purpose__                                                                   |
@@ -323,6 +385,7 @@ PRs, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
