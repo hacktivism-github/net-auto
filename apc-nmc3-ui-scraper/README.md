@@ -304,16 +304,15 @@ If the default username/password are no longer accepted, it will attempt the fal
     [*] Set language to English.
     [*] Filled username and password.
     [*] Clicked Log On, waiting for home page...
-    __[-] Login did not reach home.htm – default credentials probably NOT valid.__
-    __[-] Default login failed or undetermined. Trying fallback credentials (if configured)…__
-    __[-] No fallback credentials provided; skipping host.__
+    [-] Login did not reach home.htm – default credentials probably NOT valid.
+    [-] Default login failed or undetermined. Trying fallback credentials (if configured)…
+    [-] No fallback credentials provided; skipping host.
 
 [✓] CSV report written to report.csv
 
 [*] All hosts processed.
 ```
-  
-  ---
+---  
 
   ## Command Line Options
 
@@ -411,6 +410,7 @@ PRs, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
