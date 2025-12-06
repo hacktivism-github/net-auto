@@ -107,7 +107,7 @@ source .venv/bin/activate    # Linux/macOS
 #### 3. Install the project in editable mode
 
 ```
-pyhton -m pip install --upgrade pip
+python -m pip install --upgrade pip
 pip install -e .
 ```
 Install Playwright browsers:
@@ -414,6 +414,7 @@ Pull requests, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
