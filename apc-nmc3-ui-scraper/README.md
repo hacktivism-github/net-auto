@@ -76,7 +76,7 @@ Ideal for audits, change-control logs, and compliance evidence.
 ## Installation
 __Option 1__ — Install from PyPI (preferred)
 ```
-pip install apc-ups-audit==1.0.6
+pip install apc-ups-audit==1.0.8
 ```
 
 This installs the CLI tool:
@@ -194,6 +194,21 @@ apc-ups-audit \
   --current-pass "your current password"
   ```
 
+PowerShell:
+```
+apc-ups-audit.exe `
+  --hosts ups_hosts.txt `
+  --https `
+  --headful `
+  --apc-new-pass "Enter your hardened password" `
+  --create-admin `
+  --new-admin-user <Enter you desired admin user> `
+  --new-admin-pass "Enter your hardened password" `
+  --auto `
+  --report-csv report.csv
+
+```
+
   ---
 
 - Fallback login example
@@ -308,6 +323,7 @@ PRs, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
