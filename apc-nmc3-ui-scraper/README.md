@@ -327,9 +327,11 @@ If the default username/password are no longer accepted, it will attempt the fal
  | `--default-user` DEFAULT_USER     | Default username to test first (default: apc).                                |
  | `--default-pass` DEFAULT_PASS     | Default password to test first (default: apc).                                |
  | `--apc-new-pass` APC_NEW_PASS     | New hardened password to set for the default user (e.g. 'apc') when default   |
- |                                   | credentials are still valid. If omitted, you will be prompted once.           |
- | `--current-user` CURRENT_USER     | Username to use for initial login (default: apc).                             |
- | `--current-pass` CURRENT_PASS     | Password to use for initial login. If omitted, you will be prompted.          |
+ |                                   | credentials are still valid. If omitted and not in --auto, you will be        |
+ |                                   | prompted once.                                                                |
+ | `--current-user` CURRENT_USER     | Fallback username to use when default login fails (default: apc).             |
+ | `--current-pass` CURRENT_PASS     | Fallback password to use when default login fails. If omitted and             |
+ |                                   | current-user != default-user, you may be prompted (except when using --auto). |
  | `--create-admin`                  | Create a new Super User admin account on hosts where login succeeds.          |
  | `--new-admin-user` NEW_ADMIN_USER | New admin username to create (used with --create-admin).                      |
  | `--new-admin-pass` NEW_ADMIN_PASS | New admin password to set (used with --create-admin). If omitted and not in   |
@@ -402,7 +404,7 @@ See [`LICENSE`](https://github.com/hacktivism-github/netauto/blob/development/LI
 
 ## Contributions
 
-PRs, issues, and feature requests are welcome!
+Pull requests, issues, and feature requests are welcome!
 
 ---
 
@@ -410,6 +412,7 @@ PRs, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
