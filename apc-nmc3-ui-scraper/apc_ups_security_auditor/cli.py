@@ -13,6 +13,9 @@ import json
 from datetime import datetime
 from apc_ups_security_auditor import __version__
 
+DEFAULT_USER = "apc"
+DEFAULT_PASS = "apc"
+
 
 def load_hosts(path: str) -> List[str]:
     hosts = []
@@ -91,7 +94,7 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
         # 4) Wait for home.htm (successful login)
         try:
             page.wait_for_url("**/home.htm*", timeout=timeout * 1000)
-            print("    [✓] Login successful as {username}.")
+            print("    [✓] Login successful.")
             return True
         except PlaywrightTimeoutError:
             print("    [-] Login did not reach home.htm – default credentials probably NOT valid.")
@@ -440,7 +443,6 @@ def main():
         version=f"apc-ups-audit {__version__}",
         help="Show program version and exit."
     )
-    
 
     # ----------------------------------------------------------------------
     # INPUT / CONNECTION
@@ -484,21 +486,26 @@ def main():
         "--apc-new-pass",
         help=(
             "New hardened password to set for the default user (e.g. 'apc') "
-            "when default credentials are still valid. If omitted, you will be prompted once."
+            "when default credentials are still valid. "
+            "If omitted and not in --auto, you will be prompted once."
         ),
     )
 
     # ----------------------------------------------------------------------
-    # LOGIN CREDENTIALS (CURRENT USER)
+    # LOGIN CREDENTIALS (CURRENT USER / FALLBACK)
     # ----------------------------------------------------------------------
     parser.add_argument(
         "--current-user",
         default="apc",
-        help="Username to use for initial login (default: apc).",
+        help="Fallback username to use when default login fails (default: apc).",
     )
     parser.add_argument(
         "--current-pass",
-        help="Password to use for initial login. If omitted, you will be prompted.",
+        help=(
+            "Fallback password to use when default login fails. "
+            "If omitted and current-user != default-user, you may be prompted "
+            "(except when using --auto)."
+        ),
     )
 
     # ----------------------------------------------------------------------
@@ -523,7 +530,7 @@ def main():
     parser.add_argument(
         "--auto",
         action="store_true",
-        help="Run without interactive prompts for admin creation (non-interactive mode).",
+        help="Run without interactive prompts (non-interactive mode).",
     )
 
     # ----------------------------------------------------------------------
@@ -543,28 +550,24 @@ def main():
     # ----------------------------------------------------------------------
     # VALIDATION / PASSWORD PROMPTS
     # ----------------------------------------------------------------------
-    # Hardened password for the default 'apc' user (if default login still works)
-    if not args.apc_new_pass:
-        print("A default password hardening step is enabled for user "
-              f"'{args.default_user}' when default credentials still work.")
-        while True:
-            pw1 = getpass.getpass(
-                f"New hardened password for '{args.default_user}': "
+    # NOTE: We do NOT prompt for a new APC password here anymore.
+    #       It will only be requested if default login (apc/apc) succeeds
+    #       AND --apc-new-pass was not provided.
+
+    # current-pass (for fallback login)
+    # Only prompt if current-user != default-user. For APC we rely on default
+    # creds (apc/apc) first and only use fallback if explicitly configured.
+    if args.current_user != args.default_user and not args.current_pass:
+        if args.auto:
+            print(
+                "[!] --current-pass is required when using --current-user with --auto "
+                "and it differs from --default-user."
             )
-            pw2 = getpass.getpass(
-                f"Confirm new hardened password for '{args.default_user}': "
+            sys.exit(1)
+        else:
+            args.current_pass = getpass.getpass(
+                f"Password for fallback user {args.current_user}: "
             )
-            if pw1 != pw2:
-                print("Passwords do not match, try again.")
-            elif not pw1:
-                print("Password cannot be empty.")
-            else:
-                args.apc_new_pass = pw1
-                break
-    # ----------------------------------------------------------------------    
-    # current-pass (for login)
-    if not args.current_pass:
-        args.current_pass = getpass.getpass(f"Password for {args.current_user}: ")
 
     # new-admin-user / new-admin-pass validation
     if args.create_admin:
@@ -574,7 +577,9 @@ def main():
 
         if not args.new_admin_pass:
             if args.auto:
-                print("[!] --new-admin-pass is required together with --create-admin and --auto.")
+                print(
+                    "[!] --new-admin-pass is required together with --create-admin and --auto."
+                )
                 sys.exit(1)
             else:
                 while True:
@@ -624,7 +629,11 @@ def main():
         "status",
         "error",
     ]
-    
+
+    # Cache for APC hardened password (prompt-once behavior)
+    apc_new_password = args.apc_new_pass
+    apc_password_prompted = False
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=not args.headful)
 
@@ -673,6 +682,7 @@ def main():
                 )
 
                 if logged_default:
+                    # Default APS creds still valid
                     result["login_ok"] = True
                     result["default_login_ok"] = True
                     result["status"] = "default_login_ok"
@@ -682,15 +692,44 @@ def main():
                     )
 
                     # ------------------------------------------------------
-                    # STEP 2 – Harden 'apc' password
+                    # STEP 2 – Harden 'apc' password (only now decide password)
                     # ------------------------------------------------------
+                    if apc_new_password is None:
+                        if args.auto:
+                            print(
+                                "[!] Default APC credentials are valid but --apc-new-pass "
+                                "was not provided while running with --auto."
+                            )
+                            result["status"] = "error"
+                            result["error"] = "missing_apc_new_pass_in_auto_mode"
+                            results.append(result)
+                            context.close()
+                            continue
+
+                        if not apc_password_prompted:
+                            while True:
+                                pw1 = getpass.getpass(
+                                    f"New hardened password for '{args.default_user}': "
+                                )
+                                pw2 = getpass.getpass(
+                                    f"Confirm new hardened password for '{args.default_user}': "
+                                )
+                                if pw1 != pw2:
+                                    print("Passwords do not match, try again.")
+                                elif not pw1:
+                                    print("Password cannot be empty.")
+                                else:
+                                    apc_new_password = pw1
+                                    apc_password_prompted = True
+                                    break
+
                     print(
                         f"    -> Hardening password for '{args.default_user}' "
                         f"on {host}…"
                     )
                     hardened = change_password_via_ui(
                         page,
-                        new_password=args.apc_new_pass,
+                        new_password=apc_new_password,
                         current_password=args.default_pass,
                     )
                     if hardened:
@@ -698,7 +737,7 @@ def main():
                         result["apc_password_hardened"] = True
                     else:
                         print("    [!] Failed to harden default user password.")
-                        result["error"] = "apc_harden_failed"
+                        result["error"] = result["error"] or "apc_harden_failed"
 
                     # ------------------------------------------------------
                     # STEP 3 – Create new admin user (if requested)
@@ -726,11 +765,11 @@ def main():
 
                 else:
                     # ------------------------------------------------------
-                    # STEP 4 – Default login failed, try fallback
+                    # STEP 4 – Default login failed, try fallback (if any)
                     # ------------------------------------------------------
                     print(
                         "    [-] Default login failed or undetermined. "
-                        "Trying fallback credentials…"
+                        "Trying fallback credentials (if configured)…"
                     )
 
                     # reload login page for a clean attempt
@@ -740,9 +779,17 @@ def main():
                         timeout=args.timeout * 1000,
                     )
 
+                    if not args.current_pass:
+                        # No fallback password configured: give up on this host
+                        print("    [-] No fallback credentials provided; skipping host.")
+                        result["status"] = "login_failed"
+                        result["error"] = "default_login_failed_no_fallback"
+                        results.append(result)
+                        context.close()
+                        continue
+
                     print(
-                        f"    -> Trying fallback login as "
-                        f"{args.current_user} …"
+                        f"    -> Trying fallback login as {args.current_user} …"
                     )
                     logged_fallback = login_via_ui(
                         page,
@@ -804,7 +851,6 @@ def main():
 
         browser.close()
 
-
     # ----------------------------------------------------------------------
     # REPORT: CSV
     # ----------------------------------------------------------------------
@@ -835,4 +881,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
