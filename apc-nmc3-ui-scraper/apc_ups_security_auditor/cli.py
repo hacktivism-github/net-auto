@@ -434,6 +434,14 @@ def main():
         )
     )
 
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"apc-ups-audit {__version__}",
+        help="Show program version and exit."
+    )
+    
+
     # ----------------------------------------------------------------------
     # INPUT / CONNECTION
     # ----------------------------------------------------------------------
@@ -827,3 +835,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
