@@ -286,6 +286,32 @@ Browser will be HEADFUL (visible).
     [✓] New admin user creation flow completed (Next + Apply).
     [✓] Admin user created successfully.
 ```
+It automatically moves on to the next host as listed on the ups_hosts.txt file
+```
+[✓] CSV report written to report.csv
+
+[*] All hosts processed.
+```
+If the default username/password are no longer accepted, it will attempt the fallback if provided (`--current-user`, `--current-pass`) otherwise it will skip to the next host or eventually exit. 
+
+```
+==============================================================
+[*] Processing host: <IP Address>
+==============================================================
+    -> Opening https://<IP Address>/ ...
+    -> Trying default credentials apc/apc …
+    [*] Login page ready.
+    [*] Set language to English.
+    [*] Filled username and password.
+    [*] Clicked Log On, waiting for home page...
+    __[-] Login did not reach home.htm – default credentials probably NOT valid.__
+    __[-] Default login failed or undetermined. Trying fallback credentials (if configured)…__
+    __[-] No fallback credentials provided; skipping host.__
+
+[✓] CSV report written to report.csv
+
+[*] All hosts processed.
+```
   
   ---
 
@@ -385,6 +411,7 @@ PRs, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
