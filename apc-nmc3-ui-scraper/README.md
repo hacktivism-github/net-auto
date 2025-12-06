@@ -76,7 +76,7 @@ Ideal for audits, change-control logs, and compliance evidence.
 ## Installation
 __Option 1__ — Install from PyPI (preferred)
 ```
-pip install apc-ups-audit==1.0.8
+pip install apc-ups-security-auditor==1.0.8
 ```
 
 This installs the CLI tool:
@@ -107,7 +107,7 @@ source .venv/bin/activate    # Linux/macOS
 #### 3. Install the project in editable mode
 
 ```
-pip install --upgrade pip
+pyhton -m pip install --upgrade pip
 pip install -e .
 ```
 Install Playwright browsers:
@@ -204,6 +204,8 @@ apc-ups-audit.exe `
   --create-admin `
   --new-admin-user <Enter you desired admin user> `
   --new-admin-pass "Enter your hardened password" `
+  --current-user <your current user> `
+  --current-pass "your current password" `
   --auto `
   --report-csv report.csv
 
@@ -412,6 +414,7 @@ Pull requests, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
