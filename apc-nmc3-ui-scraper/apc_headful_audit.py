@@ -11,6 +11,10 @@ from playwright.sync_api import (
 import csv
 import json
 from datetime import datetime
+from apc_ups_security_auditor import __version__
+
+DEFAULT_USER = "apc"
+DEFAULT_PASS = "apc"
 
 
 def load_hosts(path: str) -> List[str]:
@@ -40,8 +44,11 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
     import time
 
     try:
-        page.wait_for_load_state("domcontentloaded", timeout=timeout * 1000)
+        # Wait specifically for the username input, instead of "domcontentloaded"
+        page.wait_for_selector("input[name='login_username']", timeout=5000)
+        print("    [*] Login page ready.")
 
+        
         # 1) Set language to English (you'll see the dropdown change)
         try:
             lang_select = page.locator("select").first
@@ -55,12 +62,14 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
 
         # 2) Fill username & password (you'll see the typing)
         filled = False
+
+        # Preferred: use the explicit name= fields we know exist
         try:
-            page.get_by_label("User Name").fill(username)
-            page.get_by_label("Password").fill(password)
+            page.fill("input[name='login_username']", username)
+            page.fill("input[name='login_password']", password)
             filled = True
         except Exception:
-            # Fallback if labels are not wired correctly
+            # Fallback if something is different on some host/firmware
             try:
                 page.locator("input[type='text']").first.fill(username)
                 page.locator("input[type='password']").first.fill(password)
@@ -72,6 +81,7 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
             return None
 
         print("    [*] Filled username and password.")
+        
 
         # 3) Click "Log On"
         try:
@@ -84,7 +94,7 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
         # 4) Wait for home.htm (successful login)
         try:
             page.wait_for_url("**/home.htm*", timeout=timeout * 1000)
-            print("    [✓] Login successful (default creds worked).")
+            print("    [✓] Login successful.")
             return True
         except PlaywrightTimeoutError:
             print("    [-] Login did not reach home.htm – default credentials probably NOT valid.")
@@ -96,105 +106,6 @@ def login_via_ui(page, username: str, password: str, timeout: float) -> Optional
     except Exception as e:
         print(f"    [!] Unexpected error during login: {e}")
         return None
-
-'''
-def change_password_via_ui(page, new_password: str, current_password: str = "apc"):
-    """
-    Fully automatic APC NMC3 password change via UI.
-    """
-
-    import time
-    print("    [*] Navigating to User Management (click-only navigation)...")
-
-    try:
-        page.wait_for_load_state("domcontentloaded", timeout=15000)
-
-        # 1) Configuration
-        print("      -> Clicking 'Configuration'")
-        page.get_by_role("link", name="Configuration").click(timeout=10000)
-        page.wait_for_load_state("domcontentloaded")
-        time.sleep(0.3)
-
-        # 2) Security
-        print("      -> Clicking 'Security'")
-        page.get_by_role("link", name="Security").click(timeout=10000)
-        page.wait_for_load_state("domcontentloaded")
-        time.sleep(0.3)
-
-        # 3) Local Users
-        print("      -> Clicking 'Local Users'")
-        page.get_by_role("link", name="Local Users").click(timeout=10000)
-        page.wait_for_load_state("domcontentloaded")
-        time.sleep(0.3)
-
-        # 4) Management (under userman.htm)
-        print("      -> Clicking 'Management' (Local Users / userman.htm)")
-        page.locator("a[href*='userman.htm']").first.click(timeout=10000)
-        page.wait_for_load_state("domcontentloaded")
-        time.sleep(0.5)
-
-        # 5) Click 'apc' (Super User)
-        print("      -> Clicking user 'apc' under Super User Management")
-        page.locator("a[href*='usercfg.htm'][href*='user=apc']").first.click(timeout=10000)
-        page.wait_for_load_state("domcontentloaded")
-        time.sleep(0.5)
-
-        # 6) Fill Current / New / Confirm password using password inputs
-        print("      -> Filling Current / New / Confirm Password fields...")
-
-        password_inputs = page.locator("input[type='password']")
-        count = password_inputs.count()
-
-        if count < 3:
-            print(f"      [!] ERROR: Found only {count} password fields (expected 3).")
-            return
-
-        # Order is: Current, New, Confirm
-        password_inputs.nth(0).fill(current_password)
-        password_inputs.nth(1).fill(new_password)
-        password_inputs.nth(2).fill(new_password)
-
-        # 7) Click Next or Apply
-        print("      -> Clicking 'Next' (or fallback 'Apply')...")
-
-        submitted = False
-        try:
-            page.get_by_role("button", name="Next").click(timeout=5000)
-            submitted = True
-        except Exception:
-            pass
-
-        if not submitted:
-            try:
-                page.get_by_role("button", name="Apply").click(timeout=5000)
-                submitted = True
-            except Exception:
-                pass
-
-        if not submitted:
-            print("      [!] ERROR: Could not click Next or Apply.")
-            return
-
-        # 8) Final confirmation page
-        print("      -> Waiting for final confirmation page...")
-        try:
-            page.wait_for_url("**/usrcnfrm*", timeout=5000)
-        except:
-            pass
-
-        print("      -> Clicking FINAL 'Apply'")
-        try:
-            page.get_by_role("button", name="Apply").click(timeout=5000)
-        except Exception as e:
-            print(f"      [!] Could not click final Apply: {e}")
-            return
-
-        page.wait_for_load_state("networkidle", timeout=10000)
-        print("    [✓] Password change fully confirmed.")
-
-    except Exception as e:
-        print(f"    [!] Error during password change navigation: {e}")
-'''
 
 def change_password_via_ui(page, new_password: str, current_password: str = "apc") -> bool:
     """
@@ -297,29 +208,249 @@ def change_password_via_ui(page, new_password: str, current_password: str = "apc
         print(f"    [!] Error during password change navigation: {e}")
         return False
 
+
+def create_admin_user_via_ui(
+    page,
+    new_username: str,
+    new_password: str,
+    headful: bool = False,
+) -> bool:
+    """
+    Create a new Super User / Administrator account using the NMC3 web UI.
+
+    Flow (as in your screenshots):
+      - Configuration -> Security -> Local Users -> Management
+      - Click "Add User"
+      - Fill: User Name, New Password, Confirm Password, User Type, etc.
+      - Click "Next"
+      - On confirmation page, click "Apply"
+    """
+
+    import time
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
+    print("    [*] Navigating to Local Users to create admin user...")
+
+    try:
+        page.wait_for_load_state("domcontentloaded", timeout=15000)
+
+        # 1) Configuration
+        print("      -> Clicking 'Configuration'")
+        page.get_by_role("link", name="Configuration").click(timeout=10000)
+        page.wait_for_load_state("domcontentloaded")
+        time.sleep(0.3)
+
+        # 2) Security
+        print("      -> Clicking 'Security'")
+        page.get_by_role("link", name="Security").click(timeout=10000)
+        page.wait_for_load_state("domcontentloaded")
+        time.sleep(0.3)
+
+        # 3) Local Users
+        print("      -> Clicking 'Local Users'")
+        page.get_by_role("link", name="Local Users").click(timeout=10000)
+        page.wait_for_load_state("domcontentloaded")
+        time.sleep(0.3)
+
+        # 4) Management (user list)
+        print("      -> Opening 'Management' (user list)")
+        page.locator("a[href*='userman.htm']").first.click(timeout=10000)
+        page.wait_for_load_state("domcontentloaded")
+        time.sleep(0.5)
+
+        # 5) Click "Add User"
+        print("      -> Clicking 'Add User'…")
+        added = False
+
+        try:
+            page.get_by_role("button", name="Add User").click(timeout=5000)
+            added = True
+        except Exception:
+            pass
+
+        if not added:
+            try:
+                page.locator("input[value='Add User']").first.click(timeout=5000)
+                added = True
+            except Exception:
+                pass
+
+        if not added:
+            try:
+                page.locator("a[href*='useradd']").first.click(timeout=5000)
+                added = True
+            except Exception:
+                pass
+
+        if not added:
+            print("      [!] Could not find an 'Add User' control.")
+            return False
+
+        page.wait_for_load_state("domcontentloaded", timeout=10000)
+        time.sleep(0.5)
+
+        # After clicking "Add User" we land on usercfg.htm?user= (empty form)
+        current_url = page.url
+        print(f"      -> Now on page: {current_url}")
+
+        # 6) Enable the user account
+        print("      -> Enabling new user (ticking 'Enable' checkbox)…")
+        try:
+            # Preferred: checkbox with label "Enable"
+            page.get_by_label("Enable").check()
+        except Exception:
+            # Fallback: first checkbox on the page
+            try:
+                page.locator("input[type='checkbox']").first.check()
+            except Exception as e:
+                print(f"      [!] Could not tick 'Enable' checkbox: {e}")
+                return False
+
+        # 7) Fill username
+        print(f"      -> Filling new admin user: {new_username}")
+        filled_username = False
+
+        # Strategy 1: any obvious text input
+        try:
+            text_inputs = page.locator("input[type='text'], input:not([type])")
+            if text_inputs.count() > 0:
+                text_inputs.first.fill(new_username)
+                filled_username = True
+        except Exception:
+            pass
+
+        # Strategy 2: first non-hidden, non-password input
+        if not filled_username:
+            try:
+                generic = page.locator(
+                    "input:not([type='hidden']):not([type='password'])"
+                ).first
+                generic.fill(new_username)
+                filled_username = True
+            except Exception:
+                pass
+
+        if not filled_username:
+            print("      [!] Could not locate username field (no suitable text input found).")
+            return False
+
+        # 8) Fill password & confirm password
+        print("      -> Filling password fields…")
+        pwd_inputs = page.locator("input[type='password']")
+        count = pwd_inputs.count()
+        if count < 2:
+            print(f"      [!] Could not find two password fields (found {count}).")
+            return False
+
+        pwd_inputs.nth(0).fill(new_password)
+        pwd_inputs.nth(1).fill(new_password)
+
+        # 9) Select user role (Super User / Administrator) if possible
+        print("      -> Setting user role (Super User / Administrator) if possible…")
+        try:
+            role_select = page.locator("select[name='user_role'], select[name='usertype'], select[name*='Type']")
+            if role_select.count() > 0:
+                try:
+                    role_select.first.select_option(label="Super User")
+                except Exception:
+                    try:
+                        role_select.first.select_option(label="Administrator")
+                    except Exception:
+                        pass
+            else:
+                try:
+                    page.get_by_label("Super User").check()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # 10) Click "Next" on this page
+        print("      -> Clicking 'Next'…")
+        next_clicked = False
+        try:
+            # Try generic: any control whose value/text starts with 'Next'
+            page.locator("input[value^='Next'], button:has-text('Next')").first.click(timeout=5000)
+            next_clicked = True
+        except Exception:
+            pass
+
+        if not next_clicked:
+            try:
+                page.get_by_text("Next", exact=False).click(timeout=5000)
+                next_clicked = True
+            except Exception:
+                pass
+
+        if not next_clicked:
+            print("      [!] Could not click 'Next' button.")
+            return False
+
+        # Wait for confirmation page (usrcnfrm or similar)
+        try:
+            page.wait_for_load_state("domcontentloaded", timeout=10000)
+            time.sleep(0.5)
+        except Exception:
+            pass
+
+        # 11) On confirmation page, click "Apply"
+        print("      -> On confirmation page, clicking 'Apply'…")
+        applied = False
+        try:
+            page.get_by_role("button", name="Apply").click(timeout=5000)
+            applied = True
+        except Exception:
+            pass
+
+        if not applied:
+            try:
+                page.locator("input[value='Apply']").first.click(timeout=5000)
+                applied = True
+            except Exception:
+                pass
+
+        if not applied:
+            print("      [!] Could not click final 'Apply'.")
+            return False
+
+        try:
+            page.wait_for_load_state("networkidle", timeout=10000)
+        except Exception:
+            pass
+
+        time.sleep(0.5)
+        print("    [✓] New admin user creation flow completed (Next + Apply).")
+        return True
+
+    except PlaywrightTimeoutError:
+        print("    [!] Timeout while creating admin user.")
+        return False
+    except Exception as e:
+        print(f"    [!] Exception while creating admin user: {e}")
+        return False
+        
 def main():
     parser = argparse.ArgumentParser(
-        description="Headful APC/Schneider UPS audit (NMC3) for default credentials "
-                    "via full UI automation."
+        description=(
+            "APC/Schneider UPS (NMC3) automation tool: "
+            "log in, optionally create a new admin user, and report results."
+        )
     )
+
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"apc-ups-audit {__version__}",
+        help="Show program version and exit."
+    )
+
+    # ----------------------------------------------------------------------
+    # INPUT / CONNECTION
+    # ----------------------------------------------------------------------
     parser.add_argument(
         "--hosts",
         required=True,
         help="Path to file containing UPS IPs/hostnames (one per line).",
-    )
-    parser.add_argument(
-        "--username",
-        default="apc",
-        help="Username to test (default: apc).",
-    )
-    parser.add_argument(
-        "--default-pass",
-        default="apc",
-        help="Default password to test (default: apc).",
-    )
-    parser.add_argument(
-        "--new-pass",
-        help="New password to set when default is found. If omitted, you will be prompted.",
     )
     parser.add_argument(
         "--https",
@@ -327,21 +458,84 @@ def main():
         help="Use HTTPS instead of HTTP to open the web UI.",
     )
     parser.add_argument(
+        "--timeout",
+        type=float,
+        default=15.0,
+        help="Timeout (seconds) for page loads and login (default: 30).",
+    )
+    parser.add_argument(
         "--headful",
         action="store_true",
         help="Run the browser in headful mode (visible window). Default is headless.",
     )
+
+    # ----------------------------------------------------------------------
+    # DEFAULT CREDENTIALS (apc/apc)
+    # ----------------------------------------------------------------------
     parser.add_argument(
-        "--timeout",
-        type=float,
-        default=30.0,
-        help="Timeout (seconds) for page loads and login (default: 30).",
+        "--default-user",
+        default="apc",
+        help="Default username to test first (default: apc).",
     )
-        parser.add_argument(
-        "--auto-change",
+    parser.add_argument(
+        "--default-pass",
+        default="apc",
+        help="Default password to test first (default: apc).",
+    )
+    parser.add_argument(
+        "--apc-new-pass",
+        help=(
+            "New hardened password to set for the default user (e.g. 'apc') "
+            "when default credentials are still valid. "
+            "If omitted and not in --auto, you will be prompted once."
+        ),
+    )
+
+    # ----------------------------------------------------------------------
+    # LOGIN CREDENTIALS (CURRENT USER / FALLBACK)
+    # ----------------------------------------------------------------------
+    parser.add_argument(
+        "--current-user",
+        default="apc",
+        help="Fallback username to use when default login fails (default: apc).",
+    )
+    parser.add_argument(
+        "--current-pass",
+        help=(
+            "Fallback password to use when default login fails. "
+            "If omitted and current-user != default-user, you may be prompted "
+            "(except when using --auto)."
+        ),
+    )
+
+    # ----------------------------------------------------------------------
+    # PHASE 1 – CREATE NEW ADMIN USER
+    # ----------------------------------------------------------------------
+    parser.add_argument(
+        "--create-admin",
         action="store_true",
-        help="Automatically change password on hosts with default credentials, without prompting.",
+        help="Create a new Super User admin account on hosts where login succeeds.",
     )
+    parser.add_argument(
+        "--new-admin-user",
+        help="New admin username to create (used with --create-admin).",
+    )
+    parser.add_argument(
+        "--new-admin-pass",
+        help=(
+            "New admin password to set (used with --create-admin). "
+            "If omitted and not in --auto, you will be prompted."
+        ),
+    )
+    parser.add_argument(
+        "--auto",
+        action="store_true",
+        help="Run without interactive prompts (non-interactive mode).",
+    )
+
+    # ----------------------------------------------------------------------
+    # REPORTING
+    # ----------------------------------------------------------------------
     parser.add_argument(
         "--report-csv",
         help="Path to CSV report file to write scan results (optional).",
@@ -350,164 +544,301 @@ def main():
         "--report-json",
         help="Path to JSON report file to write scan results (optional).",
     )
+
     args = parser.parse_args()
 
-    if not args.new_pass:
-        pw1 = getpass.getpass("New password to use on devices with default creds: ")
-        pw2 = getpass.getpass("Confirm new password: ")
-        if pw1 != pw2:
-            print("Passwords do not match. Aborting.")
+    # ----------------------------------------------------------------------
+    # VALIDATION / PASSWORD PROMPTS
+    # ----------------------------------------------------------------------
+    # NOTE: We do NOT prompt for a new APC password here anymore.
+    #       It will only be requested if default login (apc/apc) succeeds
+    #       AND --apc-new-pass was not provided.
+
+    # current-pass (for fallback login)
+    # Only prompt if current-user != default-user. For APC we rely on default
+    # creds (apc/apc) first and only use fallback if explicitly configured.
+    if args.current_user != args.default_user and not args.current_pass:
+        if args.auto:
+            print(
+                "[!] --current-pass is required when using --current-user with --auto "
+                "and it differs from --default-user."
+            )
             sys.exit(1)
-        args.new_pass = pw1
+        else:
+            args.current_pass = getpass.getpass(
+                f"Password for fallback user {args.current_user}: "
+            )
+
+    # new-admin-user / new-admin-pass validation
+    if args.create_admin:
+        if not args.new_admin_user:
+            print("[!] --new-admin-user is required when using --create-admin.")
+            sys.exit(1)
+
+        if not args.new_admin_pass:
+            if args.auto:
+                print(
+                    "[!] --new-admin-pass is required together with --create-admin and --auto."
+                )
+                sys.exit(1)
+            else:
+                while True:
+                    pwd1 = getpass.getpass("New admin user password: ")
+                    pwd2 = getpass.getpass("Confirm new admin user password: ")
+                    if pwd1 != pwd2:
+                        print("Passwords do not match, try again.")
+                    elif not pwd1:
+                        print("Password cannot be empty.")
+                    else:
+                        args.new_admin_pass = pwd1
+                        break
+
+    # ----------------------------------------------------------------------
+    # LOAD HOSTS
+    # ----------------------------------------------------------------------
+    try:
+        hosts = load_hosts(args.hosts)
+    except Exception as e:
+        print(f"[!] Could not read hosts file '{args.hosts}': {e}")
+        sys.exit(1)
+
+    if not hosts:
+        print(f"[!] No hosts found in {args.hosts}.")
+        sys.exit(1)
 
     scheme = "https" if args.https else "http"
-    hosts = load_hosts(args.hosts)
-
     print(f"Loaded {len(hosts)} host(s) from {args.hosts}")
     print(f"Using scheme: {scheme.upper()}")
     print(f"Browser will be {'HEADFUL (visible)' if args.headful else 'headless'}.\n")
-    results = []  # para CSV/JSON    
 
-    default_hosts = []
-    not_default_hosts = []
-    unknown_hosts = []
+    # ----------------------------------------------------------------------
+    # PLAYWRIGHT LOOP
+    # ----------------------------------------------------------------------
+    from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
-    '''
+    results = []
+    csv_fields = [
+        "host",
+        "timestamp",
+        "login_ok",
+        "default_login_ok",
+        "fallback_login_ok",
+        "apc_password_hardened",
+        "admin_created",
+        "new_admin_user",
+        "status",
+        "error",
+    ]
+
+    # Cache for APC hardened password (prompt-once behavior)
+    apc_new_password = args.apc_new_pass
+    apc_password_prompted = False
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=not args.headful)
+
         for host in hosts:
             url = f"{scheme}://{host}/"
-            print(f"[*] Opening {url} ...")
+            print("\n==============================================================")
+            print(f"[*] Processing host: {host}")
+            print("==============================================================")
+            print(f"    -> Opening {url} ...")
 
             context = browser.new_context(ignore_https_errors=True)
             page = context.new_page()
 
-            try:
-                page.goto(url, wait_until="domcontentloaded",
-                          timeout=args.timeout * 1000)
-
-                logged_in = login_via_ui(
-                    page,
-                    username=args.username,
-                    password=args.default_pass,
-                    timeout=args.timeout,
-                )
-
-                if logged_in is True:
-                    default_hosts.append(host)
-                    # Ask if we change password
-                    while True:
-                        ans = input(
-                            "    -> Attempt password change via web UI now? [y/N]: "
-                        ).strip().lower()
-                        if ans in ("y", "yes"):
-                            change_password_via_ui(page, args.new_pass)
-                            break
-                        elif ans in ("n", "no", ""):
-                            print("    [ ] Skipping password change on this host.")
-                            break
-                        else:
-                            print("    Please answer 'y' or 'n'.")
-
-                elif logged_in is False:
-                    print(f"    [-] Default credentials are NOT accepted on {host}.")
-                    not_default_hosts.append(host)
-                else:
-                    print(f"    [!] Could not determine login status for {host}.")
-                    unknown_hosts.append(host)
-
-                if args.headful:
-                    input("    -> Press ENTER to continue to the next host: ")
-
-            except PlaywrightTimeoutError:
-                print(f"    [!] Timeout while loading {url}.")
-                unknown_hosts.append(host)
-            except Exception as e:
-                print(f"    [!] Error while processing {host}: {e}")
-                unknown_hosts.append(host)
-            finally:
-                context.close()
-                '''
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=not args.headful)
-        for host in hosts:
-            url = f"{scheme}://{host}/"
-            print(f"[*] Opening {url} ...")
-
-            context = browser.new_context(ignore_https_errors=True)
-            page = context.new_page()
-
-            # valores por defeito para o relatório
             result = {
                 "host": host,
                 "timestamp": datetime.utcnow().isoformat(),
-                "default_credentials": None,   # True / False / None
-                "password_changed": False,
-                "status": "unknown",           # ok / timeout / error / unknown
+                "login_ok": False,              # any successful login
+                "default_login_ok": False,      # login with default creds?
+                "fallback_login_ok": False,     # login with current-user/current-pass?
+                "apc_password_hardened": False, # did we harden default user's password?
+                "admin_created": False,
+                "new_admin_user": args.new_admin_user if args.create_admin else "",
+                "status": "unknown",
                 "error": "",
             }
 
             try:
-                page.goto(url, wait_until="domcontentloaded",
-                          timeout=args.timeout * 1000)
+                page.goto(
+                    url,
+                    wait_until="domcontentloaded",
+                    timeout=args.timeout * 1000,
+                )
 
-                logged_in = login_via_ui(
+                # ----------------------------------------------------------
+                # STEP 1 – Try default credentials (apc/apc)
+                # ----------------------------------------------------------
+                print(
+                    f"    -> Trying default credentials "
+                    f"{args.default_user}/{args.default_pass} …"
+                )
+                logged_default = login_via_ui(
                     page,
-                    username=args.username,
+                    username=args.default_user,
                     password=args.default_pass,
                     timeout=args.timeout,
                 )
 
-                if logged_in is True:
-                    print(f"    [+] Default credentials are valid on {host}.")
-                    result["default_credentials"] = True
-                    result["status"] = "ok"
-                    # decidir se muda password automaticamente ou pergunta
-                    do_change = False
-                    if args.auto_change:
-                        do_change = True
-                        print("    [*] --auto-change enabled: will change password automatically.")
+                if logged_default:
+                    # Default APS creds still valid
+                    result["login_ok"] = True
+                    result["default_login_ok"] = True
+                    result["status"] = "default_login_ok"
+                    print(
+                        f"    [✓] Default login succeeded as {args.default_user}. "
+                        f"Hardening password and creating admin if requested…"
+                    )
+
+                    # ------------------------------------------------------
+                    # STEP 2 – Harden 'apc' password (only now decide password)
+                    # ------------------------------------------------------
+                    if apc_new_password is None:
+                        if args.auto:
+                            print(
+                                "[!] Default APC credentials are valid but --apc-new-pass "
+                                "was not provided while running with --auto."
+                            )
+                            result["status"] = "error"
+                            result["error"] = "missing_apc_new_pass_in_auto_mode"
+                            results.append(result)
+                            context.close()
+                            continue
+
+                        if not apc_password_prompted:
+                            while True:
+                                pw1 = getpass.getpass(
+                                    f"New hardened password for '{args.default_user}': "
+                                )
+                                pw2 = getpass.getpass(
+                                    f"Confirm new hardened password for '{args.default_user}': "
+                                )
+                                if pw1 != pw2:
+                                    print("Passwords do not match, try again.")
+                                elif not pw1:
+                                    print("Password cannot be empty.")
+                                else:
+                                    apc_new_password = pw1
+                                    apc_password_prompted = True
+                                    break
+
+                    print(
+                        f"    -> Hardening password for '{args.default_user}' "
+                        f"on {host}…"
+                    )
+                    hardened = change_password_via_ui(
+                        page,
+                        new_password=apc_new_password,
+                        current_password=args.default_pass,
+                    )
+                    if hardened:
+                        print("    [✓] Default user password hardened successfully.")
+                        result["apc_password_hardened"] = True
                     else:
-                        while True:
-                            ans = input(
-                                "    -> Attempt password change via web UI now? [y/N]: "
-                            ).strip().lower()
-                            if ans in ("y", "yes"):
-                                do_change = True
-                                break
-                            elif ans in ("n", "no", ""):
-                                do_change = False
-                                print("    [ ] Skipping password change on this host.")
-                                break
-                            else:
-                                print("    Please answer 'y' or 'n'.")
+                        print("    [!] Failed to harden default user password.")
+                        result["error"] = result["error"] or "apc_harden_failed"
 
-                    if do_change:
-                        success = change_password_via_ui(
-                            page,
-                            new_password=args.new_pass,
-                            current_password=args.default_pass,
+                    # ------------------------------------------------------
+                    # STEP 3 – Create new admin user (if requested)
+                    # ------------------------------------------------------
+                    if args.create_admin:
+                        print(
+                            f"    -> Creating new admin user "
+                            f"'{args.new_admin_user}' …"
                         )
-                        if success:
-                            result["password_changed"] = True
+                        created = create_admin_user_via_ui(
+                            page,
+                            new_username=args.new_admin_user,
+                            new_password=args.new_admin_pass,
+                            headful=args.headful,
+                        )
+                        if created:
+                            print("    [✓] Admin user created successfully.")
+                            result["admin_created"] = True
+                            result["status"] = "admin_created"
                         else:
-                            result["password_changed"] = False
-                            result["error"] = "password_change_failed"
+                            print("    [!] Admin user creation FAILED.")
+                            result["admin_created"] = False
+                            if not result["error"]:
+                                result["error"] = "admin_create_failed"
 
-                elif logged_in is False:
-                    print(f"    [-] Default credentials are NOT accepted on {host}.")
-                    result["default_credentials"] = False
-                    result["status"] = "ok"
                 else:
-                    print(f"    [!] Could not determine login status for {host}.")
-                    result["default_credentials"] = None
-                    result["status"] = "unknown"
+                    # ------------------------------------------------------
+                    # STEP 4 – Default login failed, try fallback (if any)
+                    # ------------------------------------------------------
+                    print(
+                        "    [-] Default login failed or undetermined. "
+                        "Trying fallback credentials (if configured)…"
+                    )
 
-                if args.headful:
+                    # reload login page for a clean attempt
+                    page.goto(
+                        url,
+                        wait_until="domcontentloaded",
+                        timeout=args.timeout * 1000,
+                    )
+
+                    if not args.current_pass:
+                        # No fallback password configured: give up on this host
+                        print("    [-] No fallback credentials provided; skipping host.")
+                        result["status"] = "login_failed"
+                        result["error"] = "default_login_failed_no_fallback"
+                        results.append(result)
+                        context.close()
+                        continue
+
+                    print(
+                        f"    -> Trying fallback login as {args.current_user} …"
+                    )
+                    logged_fallback = login_via_ui(
+                        page,
+                        username=args.current_user,
+                        password=args.current_pass,
+                        timeout=args.timeout,
+                    )
+
+                    if not logged_fallback:
+                        print("    [-] Fallback login FAILED.")
+                        result["status"] = "login_failed"
+                        result["error"] = "both_logins_failed"
+                        results.append(result)
+                        context.close()
+                        continue
+
+                    print("    [✓] Fallback login successful.")
+                    result["login_ok"] = True
+                    result["fallback_login_ok"] = True
+                    result["status"] = "logged_in_fallback"
+
+                    # STEP 3 again – create admin (if requested) from fallback session
+                    if args.create_admin:
+                        print(
+                            f"    -> Creating new admin user "
+                            f"'{args.new_admin_user}' …"
+                        )
+                        created = create_admin_user_via_ui(
+                            page,
+                            new_username=args.new_admin_user,
+                            new_password=args.new_admin_pass,
+                            headful=args.headful,
+                        )
+                        if created:
+                            print("    [✓] Admin user created successfully.")
+                            result["admin_created"] = True
+                            result["status"] = "admin_created"
+                        else:
+                            print("    [!] Admin user creation FAILED.")
+                            result["admin_created"] = False
+                            if not result["error"]:
+                                result["error"] = "admin_create_failed"
+
+                # Only pause between hosts if we're running headful AND not in --auto mode
+                if args.headful and not args.auto:
                     input("    -> Press ENTER to continue to the next host: ")
 
             except PlaywrightTimeoutError:
-                print(f"    [!] Timeout while loading {url}.")
+                print(f"    [!] TIMEOUT while processing {url}.")
                 result["status"] = "timeout"
                 result["error"] = "timeout"
             except Exception as e:
@@ -515,18 +846,18 @@ def main():
                 result["status"] = "error"
                 result["error"] = str(e)
             finally:
-                results.append(result)
                 context.close()
+                results.append(result)
 
         browser.close()
 
-    # escrever CSV se solicitado
+    # ----------------------------------------------------------------------
+    # REPORT: CSV
+    # ----------------------------------------------------------------------
     if args.report_csv:
-        fieldnames = ["host", "timestamp", "default_credentials",
-                      "password_changed", "status", "error"]
         try:
             with open(args.report_csv, "w", newline="", encoding="utf-8") as f:
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer = csv.DictWriter(f, fieldnames=csv_fields)
                 writer.writeheader()
                 for row in results:
                     writer.writerow(row)
@@ -534,7 +865,9 @@ def main():
         except Exception as e:
             print(f"\n[!] Failed to write CSV report: {e}")
 
-    # escrever JSON se solicitado
+    # ----------------------------------------------------------------------
+    # REPORT: JSON
+    # ----------------------------------------------------------------------
     if args.report_json:
         try:
             with open(args.report_json, "w", encoding="utf-8") as f:
@@ -543,18 +876,7 @@ def main():
         except Exception as e:
             print(f"[!] Failed to write JSON report: {e}")
 
-    print("\n=== SUMMARY ===")
-    print(f"Hosts with DEFAULT credentials still valid: {len(default_hosts)}")
-    for h in default_hosts:
-        print(f"  - {h}")
-
-    print(f"\nHosts where default is NOT accepted: {len(not_default_hosts)}")
-    for h in not_default_hosts:
-        print(f"  - {h}")
-
-    print(f"\nHosts with UNKNOWN status: {len(unknown_hosts)}")
-    for h in unknown_hosts:
-        print(f"  - {h}")
+    print("\n[*] All hosts processed.\n")
 
 
 if __name__ == "__main__":
