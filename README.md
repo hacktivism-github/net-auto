@@ -1,3 +1,10 @@
+# NetAuto — Network Automation Projects & Tools
+
+Welcome to NetAuto, a curated collection of network automation projects, scripts, prototypes, and research created by Bruno Teixeira.
+This repository brings together real-world solutions developed across banking, telecommunications, and data-center environments — with a strong focus on automation for network audits, and other enterprise infrastructure use cases.
+
+Whether you are looking for fully-packaged tools, inspiration for your own automation journey, or reusable code snippets, this repo aims to serve as a practical reference from the field.
+
 
 
 ## Vision & Purpose
@@ -33,3 +40,12 @@ Key features:
 - Packaged as a standalone executable
 
 Full documentation: [README](apc-nmc3-ui-scraper/README.md).
+
+## Contributions
+
+This repository is both a personal toolkit and an evolving portfolio.
+Contributions, suggestions, and feature requests are welcome — feel free to open an issue or submit a PR.
+
+## Connect
+
+If this work resonates with your interests, feel free to connect on [LinkedIn](https://www.linkedin.com/in/bruno-filipe-teixeira/), follow the GitHub updates, or reach out for collaboration on network automation initiatives.
