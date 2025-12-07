@@ -173,7 +173,7 @@ apc-ups-audit \
   --hosts ups_hosts.txt \
   --https \
   --create-admin \
-  --new-admin-user bai-admin \
+  --new-admin-user <your admin user> \
   --auto \
   --headful
   ```
@@ -220,10 +220,10 @@ If `apc`/`apc` fails, try another known user:
 apc-ups-audit \
   --hosts ups_hosts.txt \
   --https \
-  --current-user your current user \
+  --current-user <your current user> \
   --current-pass "your current password" \
   --create-admin \
-  --new-admin-user your admin user \
+  --new-admin-user <your admin user> \
   --auto
   ```
 
@@ -238,8 +238,8 @@ apc-ups-audit \
 >>   --headful `
 >>   --apc-new-pass "Your hardened password" `
 >>   --create-admin `
->>   --new-admin-user your admin user `
->>   --new-admin-pass ""Your hardened password" `
+>>   --new-admin-user <your admin user> `
+>>   --new-admin-pass "Your hardened password" `
 >>   --auto `
 >>   --report-csv report.csv
 Loaded 2 host(s) from ups_hosts.txt
@@ -414,6 +414,7 @@ Pull requests, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
