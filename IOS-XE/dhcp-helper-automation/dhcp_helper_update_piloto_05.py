@@ -24,7 +24,7 @@ DRY_RUN = False
 TEST_VLAN = None
 
 # IP do novo DHCP helper
-NEW_HELPER = "172.31.20.28"
+NEW_HELPER = "<IP Address>"
 
 # Vault config
 VAULT_ADDR = "http://127.0.0.1:8200"
