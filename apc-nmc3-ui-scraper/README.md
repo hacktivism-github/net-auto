@@ -80,7 +80,7 @@ Verify a single UPS without making any changes.
 ## Installation
 __Option 1__ — Install from PyPI (preferred)
 ```
-pip install apc-ups-security-auditor==1.0.8
+pip install apc-ups-security-auditor==1.0.9
 ```
 
 This installs the CLI tool:
@@ -441,6 +441,7 @@ Pull requests, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
