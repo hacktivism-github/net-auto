@@ -71,6 +71,10 @@ Runs fully unattended, skipping all user prompts.
 
 Ideal for audits, change-control logs, and compliance evidence.
 
+✔ Check-only mode
+
+Verify a single UPS without making any changes.
+
 ---
 
 ## Installation
@@ -228,6 +232,28 @@ apc-ups-audit \
   ```
 
   ---
+  
+  - Check-only mode (no changes)
+
+Verify a single UPS without modifying anything:
+
+```
+apc-ups-audit \
+  --check-only <IP Address> \
+  --https \
+  --headful
+```
+
+__Output example:__
+```
+[RESULT] <IP Address>: default credentials NOT valid
+```
+
+This mode is ideal for:
+
+- Spot checks
+- Post-remediation validation
+- Audit sampling
 
   ## Example Output (Headful + Auto)
 
@@ -323,6 +349,7 @@ If the default username/password are no longer accepted, it will attempt the fal
  | -h, --help                        | show this help message and exit                                               |
  | `--version`                       | show program's version number and exit                                        |
  | `--hosts` HOSTS                   | Path to file containing UPS IPs/hostnames (one per line).                     |
+ | `--check-only`                    | Verify a single host, no changes                                              |
  | `--https`                         | Use HTTPS instead of HTTP to open the web UI.                                 |
  | `--timeout` TIMEOUT               | Timeout (seconds) for page loads and login (default: 30).                     |
  | `--headful`                       | Run the browser in headful mode (visible window). Default is headless.        |
@@ -414,6 +441,7 @@ Pull requests, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
