@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import getpass
+import os
 import sys
 from typing import List, Optional
 
@@ -10,7 +11,8 @@ from playwright.sync_api import (
 )
 import csv
 import json
-from datetime import datetime
+#from datetime import datetime
+from datetime import datetime, timezone
 from apc_ups_security_auditor import __version__
 
 DEFAULT_USER = "apc"
@@ -449,9 +451,19 @@ def main():
     # ----------------------------------------------------------------------
     parser.add_argument(
         "--hosts",
-        required=True,
+        #required=True,
         help="Path to file containing UPS IPs/hostnames (one per line).",
     )
+
+    parser.add_argument(
+        "--check-only",
+        metavar="HOST",
+        help=(
+            "Check ONLY one UPS host for default credentials (apc/apc). "
+            "Print result and exit. Does not change anything."
+        ),
+    )
+
     parser.add_argument(
         "--https",
         action="store_true",
@@ -548,6 +560,13 @@ def main():
     args = parser.parse_args()
 
     # ----------------------------------------------------------------------
+    # EARLY VALIDATION (hosts vs check-only)
+    # ----------------------------------------------------------------------
+    if not args.check_only and not args.hosts:
+        parser.error("one of the arguments --hosts or --check-only is required")
+    if args.check_only and args.hosts:
+        parser.error("--check-only cannot be used together with --hosts")
+    # ----------------------------------------------------------------------
     # VALIDATION / PASSWORD PROMPTS
     # ----------------------------------------------------------------------
     # NOTE: We do NOT prompt for a new APC password here anymore.
@@ -596,18 +615,26 @@ def main():
     # ----------------------------------------------------------------------
     # LOAD HOSTS
     # ----------------------------------------------------------------------
-    try:
-        hosts = load_hosts(args.hosts)
-    except Exception as e:
-        print(f"[!] Could not read hosts file '{args.hosts}': {e}")
-        sys.exit(1)
 
-    if not hosts:
-        print(f"[!] No hosts found in {args.hosts}.")
-        sys.exit(1)
+    if args.check_only:
+        hosts = [args.check_only.strip()]
+    else:
+        try:
+            hosts = load_hosts(args.hosts)
+        except Exception as e:
+            print(f"[!] Could not read hosts file '{args.hosts}': {e}")
+            sys.exit(1)
+
+        if not hosts:
+            print(f"[!] No hosts found in {args.hosts}.")
+            sys.exit(1)
 
     scheme = "https" if args.https else "http"
-    print(f"Loaded {len(hosts)} host(s) from {args.hosts}")
+#    print(f"Loaded {len(hosts)} host(s) from {args.hosts}")
+    if args.check_only:
+        print(f"Check-only mode: 1 host ({hosts[0]})")
+    else:
+        print(f"Loaded {len(hosts)} host(s) from {args.hosts}")
     print(f"Using scheme: {scheme.upper()}")
     print(f"Browser will be {'HEADFUL (visible)' if args.headful else 'headless'}.\n")
 
@@ -649,7 +676,7 @@ def main():
 
             result = {
                 "host": host,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "login_ok": False,              # any successful login
                 "default_login_ok": False,      # login with default creds?
                 "fallback_login_ok": False,     # login with current-user/current-pass?
@@ -680,6 +707,18 @@ def main():
                     password=args.default_pass,
                     timeout=args.timeout,
                 )
+
+                # CHECK-ONLY: report and exit early (no changes)
+                if args.check_only:
+                    if logged_default is True:
+                        print(f"\n[RESULT] {host}: DEFAULT CREDENTIALS VALID ({args.default_user}/{args.default_pass})")
+                        sys.exit(0)
+                    elif logged_default is False:
+                        print(f"\n[RESULT] {host}: default credentials NOT valid")
+                        sys.exit(2)
+                    else:
+                        print(f"\n[RESULT] {host}: could not determine (timeout/error)")
+                        sys.exit(3)
 
                 if logged_default:
                     # Default APS creds still valid
@@ -881,5 +920,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
