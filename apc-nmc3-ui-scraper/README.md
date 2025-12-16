@@ -35,45 +35,6 @@ Developed for large-scale UPS deployments where vendors/suppliers often leave in
 Published on PyPI for easy installation.
 
 ---
-flowchart TD
-    A[Start] --> B[Open UPS Web UI]
-
-    B --> C{Check-only mode?}
-
-    C -->|Yes| D[Login with apc/apc]
-    D --> E{Default credentials valid?}
-    E -->|Yes| F[Report: Default creds VALID]
-    E -->|No| G[Report: Default creds NOT valid]
-    F --> Z[End]
-    G --> Z[End]
-
-    C -->|No| H[Login with apc/apc]
-
-    H --> I{Default credentials valid?}
-
-    I -->|Yes| J[Harden apc password]
-    J --> K{Create admin requested?}
-    K -->|Yes| L[Create new Admin user]
-    K -->|No| M[Skip admin creation]
-    L --> N[Record success]
-    M --> N
-    N --> O[Move to next UPS]
-
-    I -->|No| P{Fallback credentials provided?}
-
-    P -->|Yes| Q[Login with fallback user]
-    Q --> R{Login successful?}
-    R -->|Yes| S[Create admin if requested]
-    S --> N
-    R -->|No| T[Record login failure]
-    T --> O
-
-    P -->|No| U[Record default login failed]
-    U --> O
-
-    O --> Z[End / Next Host]
-
----
 
 ## Features
 ✔ Detect if default credentials still work
@@ -480,6 +441,7 @@ Pull requests, issues, and feature requests are welcome!
 
 Bruno Teixeira
 Network & Security Automation — Angola
+
 
 
 
