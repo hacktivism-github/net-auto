@@ -1,0 +1,7 @@
+# Local inventory / environment
+hosts.txt
+ups_hosts.txt
+
+# Reports / outputs
+*.csv
+*.pdf
