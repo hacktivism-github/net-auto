@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lexmark-security-auditor"
+version = "0.1.0"
+description = "Lexmark MX710 EWS security auditor & hardening automation (Basic Security + disable HTTP) via Playwright."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "playwright>=1.40"
+]
+
+[project.scripts]
+lexmark-audit = "lexmark_security_auditor.cli:main"
+
+[tool.setuptools]
+packages = ["lexmark_security_auditor", "lexmark_security_auditor.workflows"]
+
