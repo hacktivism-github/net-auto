@@ -1,6 +1,5 @@
 import argparse
-import sys
-from typing import List
+from typing import List, Optional
 
 from .runner import run
 from .reporting import write_csv, write_json
@@ -17,62 +16,121 @@ def load_hosts(path: str) -> List[str]:
     return hosts
 
 
-def parse_args():
+def parse_args(argv: Optional[List[str]] = None):
     p = argparse.ArgumentParser(
         prog="lexmark-audit",
         description="Lexmark MX710 security auditor + hardening (Basic Security + disable HTTP) via Playwright.",
     )
 
     g = p.add_mutually_exclusive_group(required=True)
-    g.add_argument("--check-only", metavar="HOST", help="Check a single printer IP/host.")
-    g.add_argument("--hosts", help="Path to file containing printer IPs/hosts (one per line).")
+    g.add_argument(
+        "--check-only", 
+        metavar="HOST", 
+        help="Check a single printer IP/host."
+        )
+    
+    g.add_argument(
+        "--hosts", 
+        help="Path to file containing printer IPs/hosts (one per line)."
+        )
 
-    p.add_argument("--https", action="store_true", help="Use HTTPS instead of HTTP.")
-    p.add_argument("--timeout", type=float, default=12.0, help="Timeout seconds for page loads.")
-    p.add_argument("--headful", action="store_true", help="Run browser visible (headful).")
-    p.add_argument("--debug-html", action="store_true", help="Dump HTML on errors (helps tuning).")
+    p.add_argument(
+        "--https", 
+        action="store_true", 
+        help="Use HTTPS instead of HTTP."
+        )
+    
+    p.add_argument(
+        "--timeout", 
+        type=float, 
+        default=12.0, 
+        help="Timeout seconds for page loads."
+        )
+    
+    p.add_argument(
+        "--headful", 
+        action="store_true", 
+        help="Run browser visible (headful)."
+        )
+    
+    p.add_argument(
+        "--debug-html",
+        action="store_true",
+        help="Dump HTML on errors (helps tuning selectors).",
+        )
 
-    p.add_argument("--report-csv", help="Write results to CSV (optional).")
-    p.add_argument("--report-json", help="Write results to JSON (optional).")
+    p.add_argument(
+        "--report-csv", 
+        help="Write results to CSV (optional)."
+        )
+    
+    p.add_argument(
+        "--report-json", 
+        help="Write results to JSON (optional)."
+        )
 
-    # Workflows
-    p.add_argument("--apply-basic-security", action="store_true",
-                   help="Apply Basic Security workflow (set auth type UsernamePassword + user/pass).")
-    p.add_argument("--disable-http", action="store_true",
-                   help="Disable TCP 80 (HTTP) on ports page.")
+    p.add_argument(
+        "--apply-basic-security", 
+        action="store_true",
+        help="Apply Basic Security workflow (Configurações -> Segurança -> Configuração de segurança)."
+        )
+    
+    p.add_argument(
+        "--disable-http", 
+        action="store_true",
+        help="Disable TCP 80 (HTTP) in 'Acesso à porta TCP/IP'."
+        )
 
-    p.add_argument("--new-admin-user", help="Admin user ID to configure (e.g. bai-admin).")
-    p.add_argument("--new-admin-pass", help="Admin password to configure.")
+    p.add_argument(
+        "--new-admin-user", 
+        help="Admin user ID."
+        )
+    
+    p.add_argument(
+        "--new-admin-pass", 
+        help="Admin password."
+        )
+    
+    p.add_argument(
+        "--auth-user", 
+        help="Username for authenticated EWS access"
+        )
+    
+    p.add_argument(
+        "--auth-pass", 
+        help="Password for authenticated EWS access"
+        )
 
-    return p.parse_args()
+    return p.parse_args(argv)
 
 
-def main():
-    args = parse_args()
+def main(argv: Optional[List[str]] = None) -> int:
+    args = parse_args(argv)
 
-    # validations
-    if args.apply_basic_security and (not args.new_admin_user or not args.new_admin_pass):
-        print("[!] --new-admin-user and --new-admin-pass are required with --apply-basic-security")
-        sys.exit(1)
+    # if args.apply_basic_security or args.disable_http:
+    #     if not args.new_admin_user or not args.new_admin_pass:
+    #         raise SystemExit("[!] --new-admin-user and --new-admin-pass are required for hardening actions.")
 
-    # Note: disable-http can run without creds if OPEN; but for the retry-after-basic-security we need creds.
-    if args.disable_http and args.apply_basic_security and (not args.new_admin_user or not args.new_admin_pass):
-        print("[!] For disable-http retry after basic security, credentials are required. Provide --new-admin-user/--new-admin-pass.")
-        sys.exit(1)
+    # Se for aplicar basic security, precisa de new-admin-*
+    if args.apply_basic_security:
+        if not args.new_admin_user or not args.new_admin_pass:
+            print("[!] --new-admin-user and --new-admin-pass are required with --apply-basic-security.")
+            sys.exit(1)
+
+    # Se for apenas desactivar HTTP sem aplicar basic security,
+    # precisa de auth-user/pass
+    if args.disable_http and not args.apply_basic_security:
+        if not args.auth_user or not args.auth_pass:
+            print("[!] --auth-user and --auth-pass are required when disabling HTTP on already protected devices.")
+            sys.exit(1)
+
 
     if args.check_only:
         hosts = [args.check_only]
-        print(f"Check-only mode: 1 host ({args.check_only})")
     else:
-        try:
-            hosts = load_hosts(args.hosts)
-        except Exception as e:
-            print(f"[!] Could not read hosts file '{args.hosts}': {e}")
-            sys.exit(1)
+        hosts = load_hosts(args.hosts)
         if not hosts:
-            print(f"[!] No hosts found in {args.hosts}.")
-            sys.exit(1)
-        print(f"Batch mode: {len(hosts)} host(s) loaded from {args.hosts}")
+            raise SystemExit(f"[!] No hosts found in {args.hosts}.")
 
     results = run(
         hosts=hosts,
@@ -84,21 +142,21 @@ def main():
         disable_http=args.disable_http,
         new_user=args.new_admin_user,
         new_pass=args.new_admin_pass,
+        auth_user=args.auth_user,
+        auth_pass=args.auth_pass,
     )
 
-    if args.report_csv:
-        try:
-            write_csv(args.report_csv, results)
-            print(f"\n[✓] CSV report written to {args.report_csv}")
-        except Exception as e:
-            print(f"\n[!] Failed to write CSV report: {e}")
 
-    if args.report_json:
-        try:
-            write_json(args.report_json, results)
-            print(f"[✓] JSON report written to {args.report_json}")
-        except Exception as e:
-            print(f"[!] Failed to write JSON report: {e}")
+    if args.report_csv and results:
+        write_csv(args.report_csv, results)
+        print(f"[✓] CSV report written to {args.report_csv}")
 
-    print("\n[*] Done.\n")
+    if args.report_json and results:
+        write_json(args.report_json, results)
+        print(f"[✓] JSON report written to {args.report_json}")
 
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

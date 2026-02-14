@@ -9,4 +9,3 @@ python -m playwright install chromium
 ## Examples
 lexmark-audit --check-only <IP address> --https --headful --apply-basic-security --new-admin-user <your admin user> --new-admin-pass "<your secure pass>"
 lexmark-audit --hosts printers.txt --https --disable-http --apply-basic-security --new-admin-user <your admin user> --new-admin-pass "<your secure pass>" --report-csv out.csv
-

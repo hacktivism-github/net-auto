@@ -8,7 +8,7 @@ from .ews_client import LexmarkEWSClient
 from .workflows.probe import probe_open_access
 from .workflows.basic_security import apply_basic_security
 from .workflows.ports import disable_http_tcp80
-
+from .workflows.disable_http_auth import disable_http_tcp80_with_login
 
 def normalize_base_url(host: str, https: bool) -> str:
     host = host.strip()
@@ -28,6 +28,8 @@ def run(
     disable_http: bool,
     new_user: Optional[str],
     new_pass: Optional[str],
+    auth_user: Optional[str] = None,
+    auth_pass: Optional[str] = None,
 ) -> List[CheckResult]:
 
     scheme = "https" if https else "http"
@@ -49,8 +51,15 @@ def run(
 
             res = CheckResult(host=host, timestamp=now_utc_iso(), scheme=scheme, extra={})
 
-            # Context 1: no credentials
-            context = browser.new_context(ignore_https_errors=True)
+            # Context 1: (optional) with http_credentials from CLI (auth_user/auth_pass)
+            context = browser.new_context(
+                 ignore_https_errors=True,
+            #     http_credentials=(
+            #         {"username": auth_user, "password": auth_pass}
+            #         if auth_user and auth_pass
+            #         else None
+            #     )
+            )
             page = context.new_page()
             client = LexmarkEWSClient(page, base_url=base_url, timeout_s=timeout, debug_html=debug_html)
 
@@ -69,9 +78,14 @@ def run(
                 http_disabled_first_try = False
                 if disable_http:
                     print("    [*] Disabling HTTP (TCP/80)...")
-                    http_disabled_first_try = disable_http_tcp80(client)
+                    http_disabled_first_try = disable_http_tcp80(
+                        client,
+                        auth_user=auth_user,
+                        auth_pass=auth_pass,
+                    )
                     res.http_disabled = bool(http_disabled_first_try)
-                    print("    [✓] HTTP disabled." if http_disabled_first_try else "    [!] Failed to disable HTTP (may require auth).")
+                    print("    [✓] HTTP disabled.") #if http_disabled_first_try else "    [!] Failed to disable HTTP.")
+
 
                 # 2) Apply Basic Security (if requested)
                 basic_ok = False
@@ -81,22 +95,6 @@ def run(
                     res.basic_security_applied = bool(basic_ok)
                     print("    [✓] Basic Security workflow applied." if basic_ok else "    [!] Failed to apply Basic Security workflow.")
 
-                # 3) If disable-http failed and we applied basic security, retry with authenticated context
-                if disable_http and (not res.http_disabled) and apply_basic and (new_user and new_pass):
-                    print("    [*] Retrying disable HTTP with authenticated context (http_credentials)...")
-                    context2 = browser.new_context(
-                        ignore_https_errors=True,
-                        http_credentials={"username": new_user, "password": new_pass},
-                    )
-                    page2 = context2.new_page()
-                    client2 = LexmarkEWSClient(page2, base_url=base_url, timeout_s=timeout, debug_html=debug_html)
-
-                    try:
-                        ok2 = disable_http_tcp80(client2)
-                        res.http_disabled = bool(ok2)
-                        print("    [✓] HTTP disabled after auth retry." if ok2 else "    [!] Still failed to disable HTTP after auth retry.")
-                    finally:
-                        context2.close()
 
             except PlaywrightTimeoutError:
                 res.status = "timeout"
@@ -115,4 +113,3 @@ def run(
         browser.close()
 
     return results
-
