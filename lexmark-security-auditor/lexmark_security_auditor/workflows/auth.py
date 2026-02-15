@@ -1,103 +1,65 @@
-# lexmark_security_auditor/workflows/auth.py
 from __future__ import annotations
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 
-def _find_login_context(page):
-    """
-    Alguns EWS metem o login em frames.
-    Vamos procurar em page + todas as frames por inputs típicos de login.
-    """
-    candidates = [page] + list(page.frames)
+def _has_login_form(ctx) -> bool:
+    try:
+        return ctx.locator("form#login_form").count() > 0
+    except Exception:
+        return False
 
-    for ctx in candidates:
-        try:
-            # Tentativa 1: nomes comuns
-            u = ctx.locator("input[name='username'], input#username, input[name='user'], input[name='userid']")
-            p = ctx.locator("input[type='password'], input[name='password'], input#password")
-            if u.count() > 0 and p.count() > 0:
-                return ctx
-        except Exception:
-            continue
 
-    return None
+def is_on_login_page(page) -> bool:
+    url = (page.url or "").lower()
+    if "login.html" in url:
+        return True
+
+    # page or frames
+    if _has_login_form(page):
+        return True
+    for fr in page.frames:
+        if _has_login_form(fr):
+            return True
+
+    return False
 
 
 def login_form_based(client, username: str, password: str) -> bool:
     """
-    Login via /cgi-bin/dynamic/printer/login.html (form-based).
-    Estratégia:
-      - assume que a page já foi redirecionada para login (ou está prestes a ser)
-      - encontra o contexto (page/frame) que contém os inputs
-      - preenche e submete
-      - valida se saímos do login (URL e ausência de campos)
+    Login via Lexmark EWS login form.
+    Uses the selectors confirmed in your HTML.
+
+    Success criteria:
+      - login form no longer present OR
+      - URL no longer contains login.html
     """
     page = client.page
 
     try:
-        # garantir que o DOM da página de login está carregado
         page.wait_for_load_state("domcontentloaded", timeout=client.timeout_ms)
 
-        ctx = _find_login_context(page)
-        if ctx is None:
-            # tenta esperar um pouco e procurar de novo
-            page.wait_for_timeout(800)
-            ctx = _find_login_context(page)
+        # Wait for the form inputs
+        page.wait_for_selector("#login_form", timeout=client.timeout_ms)
+        page.wait_for_selector("#username", timeout=client.timeout_ms)
+        page.wait_for_selector("#password", timeout=client.timeout_ms)
 
-        if ctx is None:
-            client.dump("login_no_form_found")
-            return False
+        page.locator("#username").fill(username)
+        page.locator("#password").fill(password)
 
-        # localizar username
-        user_loc = ctx.locator(
-            "input[name='username'], input#username, input[name='user'], input[name='userid']"
-        ).first
+        submit = page.locator('form#login_form input[type="submit"][value="Enviar"]')
+        if submit.count() == 0:
+            submit = page.locator("form#login_form input[type='submit']").first
 
-        # localizar password
-        pass_loc = ctx.locator(
-            "input[type='password'], input[name='password'], input#password"
-        ).first
+        # Click + wait for navigation (important for session cookies)
+        with page.expect_navigation(wait_until="domcontentloaded", timeout=client.timeout_ms):
+            submit.first.click(timeout=client.timeout_ms)
 
-        user_loc.fill(username)
-        pass_loc.fill(password)
-
-        # Botão submit: várias hipóteses
-        submit = ctx.locator(
-            "input[type='submit'], button[type='submit'], input[name='submit'], button"
-        )
-
-        # preferências por texto
-        preferred = submit.filter(has_text="Login")
-        if preferred.count() == 0:
-            preferred = submit.filter(has_text="Entrar")
-        if preferred.count() == 0:
-            preferred = submit.filter(has_text="OK")
-        if preferred.count() == 0:
-            preferred = submit.filter(has_text="Submit")
-        if preferred.count() == 0:
-            preferred = submit
-
-        preferred.first.click(timeout=client.timeout_ms)
-
-        # esperar navegação/redirect após login
-        page.wait_for_load_state("domcontentloaded", timeout=client.timeout_ms)
-
-        # Heurística de sucesso:
-        # - URL já não contém login
-        # - e não vemos de novo os inputs
-        url_now = (page.url or "").lower()
-        if "login" not in url_now:
+        # Validate we left login
+        if not is_on_login_page(page):
             return True
 
-        # alguns casos voltam para login mas com erro; verificar se inputs continuam visíveis
-        ctx2 = _find_login_context(page)
-        if ctx2 is None:
-            # já não encontro form — provável sucesso
-            return True
-
-        # ainda em login
-        client.dump("login_still_on_login")
+        client.dump("login_failed_still_on_login")
         return False
 
     except PlaywrightTimeoutError:
@@ -106,3 +68,28 @@ def login_form_based(client, username: str, password: str) -> bool:
     except Exception:
         client.dump("login_exception")
         return False
+
+
+def ensure_authenticated_session(client, username: str, password: str, target_path: str = "/cgi-bin/dynamic/config/config.html") -> bool:
+    page = client.page
+    try:
+        client.goto(target_path, wait_until="domcontentloaded")
+
+        if is_on_login_page(page):
+            return login_form_based(client, username=username, password=password)
+
+        return True
+
+    except PlaywrightTimeoutError:
+        client.dump("ensure_auth_timeout")
+        return False
+    except Exception:
+        client.dump("ensure_auth_exception")
+        return False
+
+
+def logout(client) -> None:
+    try:
+        client.goto("/cgi-bin/dynamic/printer/logout.html", wait_until="domcontentloaded")
+    except Exception:
+        pass
