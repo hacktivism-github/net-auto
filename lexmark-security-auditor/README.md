@@ -138,7 +138,11 @@ lexmark_security_auditor/
 
 ---
 
+### Architecture Diagram
+
 ![Architecture Diagram ](https://raw.githubusercontent.com/hacktivism-github/netauto/development/lexmark-security-auditor/docs/arch_diagram.png)
+
+### Execution Flow (w/ login + disable)
 
 ![Execution Flow (w/ login + disable) ](https://raw.githubusercontent.com/hacktivism-github/netauto/development/lexmark-security-auditor/docs/architecture.png)
 
@@ -269,15 +273,55 @@ lexmark-audit \
 
 ## Disclaimer
 
-<!-- This tool modifies administrator credentials on APC UPS devices. -->
-This tool performs live security configuration changes on UPS devices.
-Use responsibly and ensure:
-   - You have explicit authorization
-   - You follow organizational security policies
-   - New passwords are stored securely
-   - Changes are properly documented
+This tool is provided __"as is"__, without warranty of any kind, express or implied.
 
-The author is not responsible for misuse or misconfiguration.
+```lexmark-security-auditor``` performs automated configuration changes on network-connected devices (e.g., enabling Basic Security, modifying TCP/IP port access settings). Improper use may result in:
+
+- Loss of remote access to devices
+
+- Service disruption
+
+- Configuration lockout
+
+- Network communication impact
+
+The author assumes __no liability__ for any damage, data loss, service interruption, or operational impact resulting from the use of this software.
+
+### Intended Use
+
+This tool is intended for:
+
+- Authorized administrators
+
+- Controlled environments
+
+- Lab validation prior to production rollout
+
+- Security hardening under change-management processes
+
+You are solely responsible for:
+
+- Ensuring proper authorization before accessing devices
+
+- Validating configuration changes in a test environment
+
+- Backing up device configurations prior to execution
+
+- Following your organization's change control policies
+
+### Security Responsibility
+
+Disabling TCP 80 (HTTP) and enforcing authentication may restrict access methods. Ensure that:
+
+- HTTPS (TCP 443) remains enabled
+
+- Valid administrative credentials are known
+
+- Recovery procedures are documented
+
+### No Vendor Affiliation
+
+This project is not affiliated with, endorsed by, or supported by Lexmark International, Inc.
 
 ---
 
