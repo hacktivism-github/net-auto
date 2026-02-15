@@ -4,7 +4,7 @@
   <a href="https://pypi.org/project/lexmark-security-auditor/">
     <img src="https://img.shields.io/pypi/v/lexmark-security-auditor.svg" alt="PyPI Version">
   </a>
-  <a href="https://pypi.org/project/Lexmark-security-auditor/">
+  <a href="https://pypi.org/project/lexmark-security-auditor/">
     <img src="https://img.shields.io/pypi/pyversions/lexmark-security-auditor.svg" alt="Python Versions">
   </a>
   <a href="https://github.com/hacktivism-github/netauto/blob/development/LICENSE">
@@ -139,7 +139,9 @@ lexmark_security_auditor/
 
 ---
 
-![Lexmark Security Auditor architecture](docs/architecture.png)
+![Architecture Diagram ](https://github.com/hacktivism-github/netauto/blob/development/lexmark-security-auditor/docs/arch_diagram.png)
+
+![Execution Flow (w/ login + disable) ](https://github.com/hacktivism-github/netauto/blob/development/lexmark-security-auditor/docs/architecture.png)
 
 ---
 
@@ -266,7 +268,34 @@ lexmark-audit \
 
 - Docker container image
 
+## Disclaimer
+
+<!-- This tool modifies administrator credentials on APC UPS devices. -->
+This tool performs live security configuration changes on UPS devices.
+Use responsibly and ensure:
+   - You have explicit authorization
+   - You follow organizational security policies
+   - New passwords are stored securely
+   - Changes are properly documented
+
+The author is not responsible for misuse or misconfiguration.
+
+---
+
 ## License
 
-Internal Enterprise Use
-© 2026
+This project is licensed under the **MIT License**.  
+See [`LICENSE`](https://github.com/hacktivism-github/netauto/blob/development/LICENSE) for details.
+
+---
+
+## Contributions
+
+Pull requests, issues, and feature requests are welcome!
+
+---
+
+## Author
+
+Bruno Teixeira
+Network & Security Automation — Angola
