@@ -1,4 +1,18 @@
-# Lexmark Security Auditor
+# Lexmark Security Auditor (EWS)
+
+<p align="center">
+  <a href="https://pypi.org/project/lexmark-security-auditor/">
+    <img src="https://img.shields.io/pypi/v/lexmark-security-auditor.svg" alt="PyPI Version">
+  </a>
+  <a href="https://pypi.org/project/Lexmark-security-auditor/">
+    <img src="https://img.shields.io/pypi/pyversions/lexmark-security-auditor.svg" alt="Python Versions">
+  </a>
+  <a href="https://github.com/hacktivism-github/netauto/blob/development/LICENSE">
+    <img src="https://img.shields.io/github/license/hacktivism-github/netauto.svg" alt="MIT License">
+  </a>
+</p>
+
+
 
 Enterprise-grade security auditing and hardening tool for Lexmark MX710 (and compatible models) via Embedded Web Server (EWS).
 
@@ -125,6 +139,10 @@ lexmark_security_auditor/
 
 ---
 
+![Lexmark Security Auditor architecture](docs/architecture.png)
+
+---
+
 ## Installation (Development Mode)
 
 From project root:
@@ -145,6 +163,9 @@ python -m lexmark_security_auditor.cli ...
 ---
 
 ## Usage Examples
+
+__Note:__ If you're on Powershell replace the ``` \ ``` by ``` ` ```
+
 ### Audit Only
 ```
 lexmark-audit \

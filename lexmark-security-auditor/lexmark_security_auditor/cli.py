@@ -1,5 +1,7 @@
 import argparse
+import sys
 from typing import List, Optional
+from importlib.metadata import version as pkg_version, PackageNotFoundError
 
 from .runner import run
 from .reporting import write_csv, write_json
@@ -15,12 +17,35 @@ def load_hosts(path: str) -> List[str]:
             hosts.append(line)
     return hosts
 
+def get_version() -> str:
+    """
+    Returns installed package version.
+    Falls back to '0.0.0-dev' if running locally without installation.
+    """
+    try:
+        return pkg_version("lexmark-security-auditor")
+    except PackageNotFoundError:
+        return "0.0.0-dev"
+
 
 def parse_args(argv: Optional[List[str]] = None):
     p = argparse.ArgumentParser(
         prog="lexmark-audit",
         description="Lexmark MX710 security auditor + hardening (Basic Security + disable HTTP) via Playwright.",
     )
+
+    p.add_argument(
+        "-v", "--version",
+        action="version",
+        version=f"%(prog)s {get_version()}",
+        help="Show version and exit.",
+    )
+
+    # p.add_argument(
+    #     "-v", "--version", 
+    #     action="version", 
+    #     version=f"lexmark_security_auditor {__version__}"
+    #     )        
 
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument(
