@@ -13,7 +13,6 @@
 </p>
 
 
-
 Enterprise-grade security auditing and hardening tool for Lexmark MX710 (and compatible models) via Embedded Web Server (EWS).
 
 Built with Playwright + Python, this tool enables controlled, automated security enforcement at scale.
@@ -139,9 +138,9 @@ lexmark_security_auditor/
 
 ---
 
-![Architecture Diagram ](https://github.com/hacktivism-github/netauto/blob/development/lexmark-security-auditor/docs/arch_diagram.png)
+![Architecture Diagram ](https://raw.githubusercontent.com/hacktivism-github/netauto/development/lexmark-security-auditor/docs/arch_diagram.png)
 
-![Execution Flow (w/ login + disable) ](https://github.com/hacktivism-github/netauto/blob/development/lexmark-security-auditor/docs/architecture.png)
+![Execution Flow (w/ login + disable) ](https://raw.githubusercontent.com/hacktivism-github/netauto/development/lexmark-security-auditor/docs/architecture.png)
 
 ---
 
