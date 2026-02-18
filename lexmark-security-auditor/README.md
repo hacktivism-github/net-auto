@@ -2,10 +2,10 @@
 
 <p align="center">
   <a href="https://pypi.org/project/lexmark-security-auditor/">
-    <img src="https://img.shields.io/pypi/v/lexmark-security-auditor.svg" alt="PyPI Version">
+    <img src="https://img.shields.io/pypi/v/lexmark-security-auditor.svg?cacheSeconds=300" alt="PyPI Version">
   </a>
   <a href="https://pypi.org/project/lexmark-security-auditor/">
-    <img src="https://img.shields.io/pypi/pyversions/lexmark-security-auditor.svg" alt="Python Versions">
+    <img src="https://img.shields.io/pypi/pyversions/lexmark-security-auditor.svg?cacheSeconds=300" alt="Python Versions">
   </a>
   <a href="https://github.com/hacktivism-github/netauto/blob/development/LICENSE">
     <img src="https://img.shields.io/github/license/hacktivism-github/netauto.svg" alt="MIT License">
