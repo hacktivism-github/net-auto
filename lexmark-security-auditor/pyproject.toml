@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lexmark-security-auditor"
-version = "0.1.4"
+version = "0.1.5"
 description = "Lexmark MX710 (and compatible models) EWS security auditor & hardening automation (Basic Security + disable HTTP) via Playwright."
 readme = "README.md"
 license = { text = "MIT" }
