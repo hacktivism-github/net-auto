@@ -4,17 +4,34 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lexmark-security-auditor"
-version = "0.1.3"
-description = "Lexmark MX710 EWS security auditor & hardening automation (Basic Security + disable HTTP) via Playwright."
+version = "0.1.4"
+description = "Lexmark MX710 (and compatible models) EWS security auditor & hardening automation (Basic Security + disable HTTP) via Playwright."
 readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Bruno Teixeira" }]
 requires-python = ">=3.9"
 dependencies = [
   "playwright>=1.40"
 ]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/hacktivism-github/netauto/tree/development/lexmark-security-auditor"
+Repository = "https://github.com/hacktivism-github/netauto"
 
 [project.scripts]
 lexmark-audit = "lexmark_security_auditor.cli:main"
 
 [tool.setuptools]
 packages = ["lexmark_security_auditor", "lexmark_security_auditor.workflows"]
+license-files = ["LICENSE", "LICENSE.txt"]
 
