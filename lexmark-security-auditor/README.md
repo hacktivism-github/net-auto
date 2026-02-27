@@ -17,31 +17,41 @@ Enterprise-grade security auditing and hardening tool for Lexmark MX710 (and com
 
 Built with Playwright + Python, this tool enables controlled, automated security enforcement at scale.
 
+## Version 0.2.0 Highlights
+
+✅ MX Series (Username + Password authentication)
+
+✅ MS Series (Password-Only authentication)
+
+✅ Automatic model detection (MX vs MS)
+
+✅ MS Function Protection hardening (Admin menus protection)
+
+✅ Idempotent execution
+
+✅ Session-aware login handling
+
+✅ Structured CSV/JSON reporting
+
+✅ Modular workflow architecture
+
 ## Overview
 
 The __Lexmark Security Auditor__ was developed to:
 
 - Audit administrative exposure on Lexmark printers
 
-- Enforce Basic Security (username/password protection)
+- Enforce Basic Security (authentication enforcement)
 
-- Disable insecure services (e.g., TCP 80 – HTTP)
+- Harden MS password-only devices
 
-- Operate at scale across multiple devices
+- Protect administrative menus (MS Series)
 
-- Provide CSV/JSON reporting for governance & compliance
+- Disable insecure services (TCP 80 – HTTP)
 
-Designed with a __modular architecture__, the tool separates:
+- Operate safely at scale across multiple devices
 
-- Authentication logic
-
-- Port configuration logic
-
-- Security workflows
-
-- Runner orchestration
-
-- CLI interface
+- Provide compliance-ready reporting
 
 ## Key Features
 ### Security Audit
@@ -54,60 +64,98 @@ Designed with a __modular architecture__, the tool separates:
 
     - UNKNOWN
 
-- Identifies exposure via:
+- Detection based on:
 
-    - /auth/manageusers.html
+    - Sensitive admin endpoints
 
-    - login redirects
+    - Login redirects
 
     - HTTP status codes
 
+    - Page content heuristics
+
 ## Basic Security Enforcement
+
+### MX Series (Username + Password)
 
 Automates:
 
-1. Navigate to:
+1. ```/cgi-bin/dynamic/config/config.html```
 
-```
-/cgi-bin/dynamic/config/config.html
-```
-2. Access
-```
-Configurações → Segurança → Configuração de segurança
-```
-3. Configure:
+2. Navigate to Security settings
 
-    - Authentication Type: ```UsernamePassword```
+3. Set:
+
+    - Authentication Type: UsernamePassword
 
     - Admin ID
 
     - Password
 
 4. Apply configuration
+
+---
+
+### MS Series (Password-Only Mode)
+
+Automates:
+
+1. ```/cgi-bin/dynamic/printer/config/secure/auth/lite-password.html```
+
+2. Set Admin Password
+
+3. Detect login enforcement
+
+4. Re-authenticate (password-only)
+
+5. Harden administrative functions:
+
+    - Remote Security Menu
+
+    - Remote Config Menu
+
+    - Network/Ports Menu
+
+    - Firmware Updates
+
+    - Remote Management
+
+    - Import/Export Config
+
+    - IPP (Internet Printing Protocol)
+
+    - And more (model-dependent)
+
+✔ Automatically selects strongest available protection
+
+✔ Avoids selecting "Disabled" unless explicitly needed
+
+✔ Fully idempotent
+
 ---
 ## HTTP Hardening (TCP 80 Disable)
 
-- Authenticates via form-based login
+Authenticates (MX or MS models)
 
-- Navigates to:
+Navigates to:
+
 ```
 /cgi-bin/dynamic/config/secure/ports.html
 ```
-- Unchecks
+Unchecks:
 ```
 TCP 80 (HTTP)
 ```
-- Submits configuration
 
-- Verifies idempotently
+- Submits
 
-- Performs logout
+- Verifies
 
-✔ Idempotent (safe to run multiple times)
+- Logs out
 
-✔ Safe retry logic
-
-✔ Session-aware
+✔ Idempotent
+✔ Safe to re-run
+✔ Login-aware
 
 ---
 ## Architecture 
@@ -118,39 +166,65 @@ lexmark_security_auditor/
 ├── runner.py
 │
 ├── models.py
+├── reporting.py
 ├── ews_client.py
 │
 └── workflows/
-    ├── auth.py
-    ├── basic_security.py
     ├── probe.py
-    └── ports.py
+    ├── identify.py
+    ├── auth.py
+    ├── ports.py
+    ├── model.py
+    ├── basic_security.py              # MX
+    ├── basic_security_ms.py           # MS password-only
+    └── basic_security_ms_templates.py # MS function protection
 ```
 ---
-| Module              | Responsibility                 |
-| ------------------- | ------------------------------ |
-| `runner.py`         | Orchestration & decision logic |
-| `auth.py`           | Session handling & login       |
-| `ports.py`          | TCP 80 disable logic           |
-| `basic_security.py` | Admin security enforcement     |
-| `probe.py`          | Exposure detection             |
-| `ews_client.py`     | EWS navigation abstraction     |
+| Module                           | Responsibility                   |
+| -------------------------------- | -------------------------------- |
+| `runner.py`                      | Orchestration & decision logic   |
+| `identify.py`                    | Model detection (MX vs MS)       |
+| `probe.py`                       | Exposure detection               |
+| `auth.py`                        | Session handling & login         |
+| `basic_security.py`              | MX security enforcement          |
+| `basic_security_ms.py`           | MS password-only enforcement     |
+| `basic_security_ms_templates.py` | MS function protection hardening |
+| `ports.py`                       | TCP 80 disable logic             |
+| `ews_client.py`                  | EWS navigation abstraction       |
+| `reporting.py`                   | CSV/JSON export                  |
 
 ---
 
-### Architecture Diagram
+### Arquitetura do Código (Package / Components)
 
-![Architecture Diagram ](https://raw.githubusercontent.com/hacktivism-github/netauto/development/lexmark-security-auditor/docs/arch_diagram.png)
+![Architecture Diagram ](https://raw.githubusercontent.com/hacktivism-github/netauto/development/lexmark-security-auditor/docs/arch-2026-02-27-075812.png)
 
 ### Execution Flow (w/ login + disable)
 
-![Execution Flow (w/ login + disable) ](https://raw.githubusercontent.com/hacktivism-github/netauto/development/lexmark-security-auditor/docs/architecture.png)
+Execution Flow
+
+1. Probe exposure
+
+2. Detect model (MX / MS)
+
+3. Apply Basic Security
+
+4. (MS) Harden function templates
+
+5. Disable HTTP (if requested)
+
+6. Generate report
+
+![Execution Flow (w/ login + disable) ](https://raw.githubusercontent.com/hacktivism-github/netauto/development/lexmark-security-auditor/docs/arch-2026-02-27-081049.png)
 
 ---
 
-## Installation (Development Mode)
+## Installation
+```
+pip install lexmark-security-auditor==0.2.0
+```
+Development mode:
 
-From project root:
 ```
 pip install -e .
 ```
@@ -209,15 +283,26 @@ lexmark-audit \
 ---
 ## Output Fields (CSV/JSON)
 
-| Field                  | Description           |
-| ---------------------- | --------------------- |
-| host                   | Printer IP            |
-| probe_result           | OPEN / AUTH / UNKNOWN |
-| evidence               | Detection details     |
-| basic_security_applied | Boolean               |
-| http_disabled          | Boolean               |
-| status                 | ok / timeout / error  |
-| error                  | Error message         |
+| Field                  | Description             |
+| ---------------------- | ----------------------- |
+| host                   | Printer IP              |
+| probe_result           | OPEN / AUTH / UNKNOWN   |
+| evidence               | Detection details       |
+| model                  | Detected model          |
+| family                 | MX / MS                 |
+| basic_security_applied | Boolean                 |
+| http_disabled          | Boolean                 |
+| status                 | ok / timeout / error    |
+| error                  | Error message           |
+| extra                  | Model-specific metadata |
+
+For MS devices, extra may include:
+
+- ms_templates_ok
+
+- ms_templates_changed
+
+- ms_templates_total
 
 ---
 
